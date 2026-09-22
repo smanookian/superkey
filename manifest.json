@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "stevinator.superkey",
+  "name": "Superkey",
+  "version": "0.1.0",
+  "author": "Stevinator",
+  "description": "Learn Omarchy shortcuts by doing. Guided lessons on your real desktop.",
+  "kinds": ["service", "panel", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "panel": "Coach.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Superkey",
+    "description": "Open the Superkey shortcut coach",
+    "category": "Tools",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
