@@ -1,0 +1,134 @@
+{
+  "id": "hyprland.workspaces",
+  "track": "hyprland",
+  "title": "Workspaces",
+  "course": {
+    "module": 3,
+    "section": "3.19",
+    "url": "https://stevinator.com/courses/omarchy/module-03"
+  },
+  "setup": {
+    "practiceWindows": 2,
+    "workspaces": [
+      1,
+      2
+    ]
+  },
+  "steps": [
+    {
+      "id": "switch-2",
+      "say": "Switch to workspace 2.",
+      "keys": [
+        "Super",
+        "2"
+      ],
+      "hint": "Hold the Super (Windows) key and tap 2. The bar shows which workspace you're on.",
+      "verify": {
+        "type": "workspace",
+        "id": 2
+      },
+      "showme": "hl.dsp.focus({ workspace = \"2\" })",
+      "why": "Each number is a workspace. One task per workspace beats juggling windows."
+    },
+    {
+      "id": "switch-1",
+      "say": "Go back to workspace 1.",
+      "keys": [
+        "Super",
+        "1"
+      ],
+      "hint": "Same idea: Super plus the number.",
+      "verify": {
+        "type": "workspace",
+        "id": 1
+      },
+      "showme": "hl.dsp.focus({ workspace = \"1\" })",
+      "why": "Workspaces you leave empty disappear on their own; the ones with windows stay."
+    },
+    {
+      "id": "next",
+      "say": "Move to the next workspace with Tab.",
+      "keys": [
+        "Super",
+        "Tab"
+      ],
+      "hint": "Super + Tab walks forward one workspace, without remembering numbers.",
+      "verify": {
+        "type": "workspaceDelta",
+        "delta": 1
+      },
+      "showme": "hl.dsp.focus({ workspace = \"e+1\" })",
+      "why": "Tab and Shift+Tab are for when you don't care about the number, just 'the next one'."
+    },
+    {
+      "id": "prev",
+      "say": "And back with Shift + Tab.",
+      "keys": [
+        "Super",
+        "Shift",
+        "Tab"
+      ],
+      "hint": "Add Shift to go the other way.",
+      "verify": {
+        "type": "workspaceDelta",
+        "delta": -1
+      },
+      "showme": "hl.dsp.focus({ workspace = \"e-1\" })",
+      "why": "Same key, reversed with Shift — a pattern you'll see all over Omarchy."
+    },
+    {
+      "id": "move-window",
+      "say": "Send the practice terminal to workspace 3 and follow it.",
+      "keys": [
+        "Super",
+        "Shift",
+        "3"
+      ],
+      "hint": "Focus the practice window first (click it). Super + Shift + number moves the window and takes you with it.",
+      "verify": {
+        "type": "practiceWindowOnWorkspace",
+        "id": 3,
+        "follow": true
+      },
+      "showme": "hl.dsp.window.move({ workspace = \"3\" })",
+      "why": "Shift means 'take the window with me'."
+    },
+    {
+      "id": "move-silent",
+      "say": "Now send it to workspace 4 without following.",
+      "keys": [
+        "Super",
+        "Shift",
+        "Alt",
+        "4"
+      ],
+      "hint": "Adding Alt keeps you where you are while the window goes away.",
+      "verify": {
+        "type": "practiceWindowOnWorkspace",
+        "id": 4,
+        "follow": false
+      },
+      "showme": "hl.dsp.window.move({ workspace = \"4\", follow = false })",
+      "why": "Useful for parking a window you'll come back to later."
+    },
+    {
+      "id": "former",
+      "say": "Jump to workspace 4, then use Ctrl + Tab to bounce back.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "Tab"
+      ],
+      "hint": "First Super + 4, then Super + Ctrl + Tab returns to the workspace you came from.",
+      "verify": {
+        "type": "workspaceSequence",
+        "ids": [
+          4,
+          3
+        ]
+      },
+      "showme": null,
+      "why": "Former-workspace is the fastest way to flip between two tasks."
+    }
+  ]
+}
