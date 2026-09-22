@@ -103,12 +103,20 @@ Item {
         Hyprland.dispatch("hl.dsp.window.close({ window = \"address:" + norm(tl[i].address) + "\" })")
   }
 
+  TmuxVerify { id: tmux }
+  readonly property var tmuxState: tmux
+  readonly property bool tmuxLesson: lesson !== null && lesson.setup && lesson.setup.tmux === true
+
   function spawnPractice(count) {
     practiceWanted = practiceAddresses.length + count
     awaitingPractice = true
-    for (var i = 0; i < count; i++)
-      Quickshell.execDetached(["ghostty", "--title=" + practiceTitle, "-e", "bash", "-c",
-        "printf '\\n  Superkey practice window " + (i + 1) + ".\\n  Do the shortcuts on THIS window when asked.\\n\\n'; exec bash"])
+    for (var i = 0; i < count; i++) {
+      if (tmuxLesson)
+        Quickshell.execDetached(["ghostty", "--title=" + practiceTitle, "-e", "tmux", "-L", tmux.socket, "attach", "-t", "practice"])
+      else
+        Quickshell.execDetached(["ghostty", "--title=" + practiceTitle, "-e", "bash", "-c",
+          "printf '\\n  Superkey practice window " + (i + 1) + ".\\n  Do the shortcuts on THIS window when asked.\\n\\n'; exec bash"])
+    }
   }
 
   function closePractice() {
@@ -213,6 +221,8 @@ Item {
       practiceWorkspace = pickPracticeWorkspace()
       if (practiceWorkspace !== -1) Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + practiceWorkspace + "\" })")
     }
+    if (parsed.setup && parsed.setup.tmux === true) { tmux.start(); spawnLater.interval = 900 }
+    else spawnLater.interval = 250
     if (parsed.setup && parsed.setup.practiceWindows > 0) spawnLater.restart()
     else nextStep()
   }
@@ -241,6 +251,10 @@ Item {
       return
     }
     phase = "waiting"
+    tmux.beginStep()
+    tmux.polling = tmuxLesson
+    if (tmuxLesson && lesson.steps[stepIndex].verify && lesson.steps[stepIndex].verify.type === "tmuxReload") tmux.armReloadDetection()
+    tmux.watchPrefix = lesson.steps[stepIndex].verify && lesson.steps[stepIndex].verify.type === "tmuxPrefix"
     practiceCountAtStart = practiceAddresses.length
     var s = lesson.steps[stepIndex]
     if (s.verify && s.verify.type.indexOf("practice") === 0) {
@@ -290,7 +304,10 @@ Item {
 
   function showHint() { hintShown = true }
 
+  function teardownTmux() { tmux.polling = false; if (tmux.active) tmux.stop() }
+
   function goHome() {
+    teardownTmux()
     if (practiceWorkspace !== -1 && homeWorkspace !== -1) Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + homeWorkspace + "\" })")
     practiceWorkspace = -1
   }
@@ -395,6 +412,25 @@ Item {
       if (!info.length || !stepStart.at) return
       if (info[0].at[0] !== stepStart.at[0] || info[0].at[1] !== stepStart.at[1]) markDone(false)
       break }
+    case "tmuxPrefix":        if (tmux.prefixSeen) markDone(false); break
+    case "tmuxWindowAdd":     if (tmux.windowsAdded > 0) markDone(false); break
+    case "tmuxWindowClose":   if (tmux.windowsClosed > 0) markDone(false); break
+    case "tmuxWindowRenamed": if (tmux.windowsRenamed > 0) markDone(false); break
+    case "tmuxTree":          if (tmux.modeChanges > 0) markDone(false); break
+    case "tmuxDetach":        if (tmux.detaches > 0) markDone(false); break
+    case "tmuxWindowSwitch":  if (tmux.windowSwitches > 0) markDone(false); break
+    case "tmuxWindowMoved":   if (tmux.orderChanged()) markDone(false); break
+    case "tmuxSplit": {       // pane count up; orientation optional: "h" side-by-side ({), "v" stacked ([)
+      if (tmux.paneCount <= tmux.paneCountAtStart) return
+      if (v.orientation === "h" && tmux.layout.indexOf("{") === -1) return
+      if (v.orientation === "v" && tmux.layout.indexOf("[") === -1) return
+      markDone(false); break }
+    case "tmuxPaneFocus":     if (tmux.paneFocusChanges > 0) markDone(false); break
+    case "tmuxPaneResize":    if (tmux.layoutChanges > 0 && tmux.paneCount === tmux.paneCountAtStart && !tmux.zoomed && tmux.layout !== tmux.layoutAtStart) markDone(false); break
+    case "tmuxZoom":          if (tmux.zoomed) markDone(false); break
+    case "tmuxPaneClose":     if (tmux.paneCount < tmux.paneCountAtStart) markDone(false); break
+    case "tmuxSessionSwitch": if (tmux.visibleSession !== "" && tmux.visibleSessionAtStart !== "" && tmux.visibleSession !== tmux.visibleSessionAtStart) markDone(false); break
+    case "tmuxReload":        if (tmux.reloadSeen) markDone(false); break
     case "practiceClosed":
       if (practiceAddresses.length < practiceCountAtStart) markDone(false); break
     case "loose":
@@ -406,6 +442,7 @@ Item {
   }
 
   onFocusedWorkspaceChanged: verifyNow()
+  Connections { target: tmux; function onEventSerialChanged() { root.verifyNow() } }
 
   Connections {
     target: Hyprland

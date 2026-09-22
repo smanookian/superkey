@@ -1,0 +1,148 @@
+{
+  "id": "tmux.panes",
+  "track": "tmux",
+  "title": "Panes",
+  "course": {
+    "module": 5,
+    "section": "5.9",
+    "url": "https://stevinator.com/courses/omarchy/module-05"
+  },
+  "setup": {
+    "practiceWindows": 1,
+    "isolate": true,
+    "tmux": true
+  },
+  "steps": [
+    {
+      "id": "split-h",
+      "say": "Split the pane so the new one is beside it.",
+      "keys": [
+        "Prefix",
+        "v"
+      ],
+      "hint": "Prefix, then v: a vertical divider, panes side by side.",
+      "verify": {
+        "type": "tmuxSplit",
+        "orientation": "h"
+      },
+      "showme": "tmux -L superkey split-window -h -t practice",
+      "why": "Panes split one window; windows are separate tabs."
+    },
+    {
+      "id": "split-v",
+      "say": "Split again, this time below.",
+      "keys": [
+        "Prefix",
+        "h"
+      ],
+      "hint": "Prefix, then h: a horizontal divider, panes stacked.",
+      "verify": {
+        "type": "tmuxSplit",
+        "orientation": "v"
+      },
+      "showme": "tmux -L superkey split-window -v -t practice",
+      "why": "v and h name the divider, not the direction — a common trip-up."
+    },
+    {
+      "id": "split-noprefix",
+      "say": "Split once more without the prefix.",
+      "keys": [
+        "Alt",
+        "Return"
+      ],
+      "hint": "Alt + Enter splits below; Alt + Shift + Enter splits beside. No prefix.",
+      "verify": {
+        "type": "tmuxSplit"
+      },
+      "showme": null,
+      "why": "Omarchy adds prefix-free splits because you'll do this constantly."
+    },
+    {
+      "id": "focus",
+      "say": "Move focus to another pane.",
+      "keys": [
+        "Ctrl",
+        "Alt",
+        "Arrows"
+      ],
+      "hint": "Ctrl + Alt + Arrow moves between panes by direction.",
+      "verify": {
+        "type": "tmuxPaneFocus"
+      },
+      "showme": "tmux -L superkey select-pane -t practice -L",
+      "why": "Same spatial idea as Hyprland's Super + Arrows."
+    },
+    {
+      "id": "resize",
+      "say": "Resize the current pane.",
+      "keys": [
+        "Ctrl",
+        "Alt",
+        "Shift",
+        "Arrows"
+      ],
+      "hint": "Add Shift to the focus keys and the divider moves 5 cells.",
+      "verify": {
+        "type": "tmuxPaneResize"
+      },
+      "showme": "tmux -L superkey resize-pane -t practice -L 5",
+      "why": "Resize is relative; tap it a few times."
+    },
+    {
+      "id": "zoom",
+      "say": "Zoom the current pane.",
+      "keys": [
+        "Prefix",
+        "z"
+      ],
+      "hint": "Prefix, then z: the pane fills the window. ZOOM shows in the status bar.",
+      "verify": {
+        "type": "tmuxZoom"
+      },
+      "showme": "tmux -L superkey resize-pane -t practice -Z",
+      "why": "Zoom for focus, z again to come back — like Super + F for panes."
+    },
+    {
+      "id": "unzoom",
+      "say": "Un-zoom it.",
+      "keys": [
+        "Prefix",
+        "z"
+      ],
+      "hint": "Same key.",
+      "verify": {
+        "type": "loose"
+      },
+      "showme": null,
+      "why": "Toggle."
+    },
+    {
+      "id": "close-pane",
+      "say": "Close the current pane.",
+      "keys": [
+        "Prefix",
+        "x"
+      ],
+      "hint": "Prefix, then x (or Alt + Escape without the prefix).",
+      "verify": {
+        "type": "tmuxPaneClose"
+      },
+      "showme": null,
+      "why": "Closing the last pane closes the window."
+    },
+    {
+      "id": "reload",
+      "say": "Reload the Tmux configuration.",
+      "keys": [
+        "Prefix",
+        "q"
+      ],
+      "hint": "Prefix, then q re-reads ~/.config/tmux/tmux.conf and says 'Configuration reloaded'.",
+      "verify": {
+        "type": "tmuxReload"
+      },
+      "showme": null,
+      "why": "After editing tmux.conf you never need to restart Tmux."
+    }
+  ]
+}

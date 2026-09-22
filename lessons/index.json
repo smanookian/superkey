@@ -13,6 +13,15 @@
         "hyprland.scratchpad",
         "hyprland.panels"
       ]
+    },
+    {
+      "id": "tmux",
+      "title": "Tmux",
+      "blurb": "Sessions, windows, and panes inside the terminal.",
+      "lessons": [
+        "tmux.sessions",
+        "tmux.panes"
+      ]
     }
   ]
 }

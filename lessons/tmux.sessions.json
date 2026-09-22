@@ -1,0 +1,144 @@
+{
+  "id": "tmux.sessions",
+  "track": "tmux",
+  "title": "Sessions & windows",
+  "course": {
+    "module": 5,
+    "section": "5.4",
+    "url": "https://stevinator.com/courses/omarchy/module-05"
+  },
+  "setup": {
+    "practiceWindows": 1,
+    "isolate": true,
+    "tmux": true
+  },
+  "steps": [
+    {
+      "id": "prefix",
+      "say": "Press the Tmux prefix and let go.",
+      "keys": [
+        "Ctrl",
+        "Space"
+      ],
+      "hint": "Ctrl + Space (or Ctrl + B). Press it, release it — the status bar shows PREFIX while it's armed.",
+      "verify": {
+        "type": "tmuxPrefix"
+      },
+      "showme": null,
+      "why": "Every Tmux command starts with the prefix. It's a chord, not a hold."
+    },
+    {
+      "id": "new-window",
+      "say": "Create a new Tmux window.",
+      "keys": [
+        "Prefix",
+        "c"
+      ],
+      "hint": "Ctrl + Space, release, then c.",
+      "verify": {
+        "type": "tmuxWindowAdd"
+      },
+      "showme": "tmux -L superkey new-window -t practice",
+      "why": "Tmux windows are tabs inside one terminal. The status bar lists them."
+    },
+    {
+      "id": "rename",
+      "say": "Rename the current window.",
+      "keys": [
+        "Prefix",
+        "r"
+      ],
+      "hint": "Prefix, then r, type a name, Enter.",
+      "verify": {
+        "type": "tmuxWindowRenamed"
+      },
+      "showme": null,
+      "why": "Named windows beat 'bash, bash, bash' when you have six of them."
+    },
+    {
+      "id": "next",
+      "say": "Switch to the next window.",
+      "keys": [
+        "Alt",
+        "→"
+      ],
+      "hint": "Alt + Right / Alt + Left — no prefix needed for these.",
+      "verify": {
+        "type": "tmuxWindowSwitch"
+      },
+      "showme": "tmux -L superkey next-window -t practice",
+      "why": "Omarchy binds window navigation without the prefix, so it's one chord."
+    },
+    {
+      "id": "move",
+      "say": "Move the current window left or right.",
+      "keys": [
+        "Alt",
+        "Shift",
+        "←/→"
+      ],
+      "hint": "Alt + Shift + Left/Right swaps the window with its neighbour in the list.",
+      "verify": {
+        "type": "tmuxWindowMoved"
+      },
+      "showme": null,
+      "why": "Reordering keeps related windows next to each other."
+    },
+    {
+      "id": "kill-window",
+      "say": "Close the current window.",
+      "keys": [
+        "Prefix",
+        "k"
+      ],
+      "hint": "Prefix, then k. The window and its panes are gone.",
+      "verify": {
+        "type": "tmuxWindowClose"
+      },
+      "showme": null,
+      "why": "k for kill. Tmux doesn't ask twice."
+    },
+    {
+      "id": "sessions",
+      "say": "Open the session list.",
+      "keys": [
+        "Prefix",
+        "s"
+      ],
+      "hint": "Prefix, then s shows every session and window as a tree. Escape or q leaves it.",
+      "verify": {
+        "type": "tmuxTree"
+      },
+      "showme": null,
+      "why": "Sessions are for projects; windows are for tasks inside a project."
+    },
+    {
+      "id": "switch-session",
+      "say": "Switch to the other session.",
+      "keys": [
+        "Alt",
+        "↑/↓"
+      ],
+      "hint": "Alt + Up / Alt + Down cycles sessions. There's a second one called 'scratch'.",
+      "verify": {
+        "type": "tmuxSessionSwitch"
+      },
+      "showme": "tmux -L superkey switch-client -n",
+      "why": "Two projects, one terminal, one keypress between them."
+    },
+    {
+      "id": "detach",
+      "say": "Detach from Tmux.",
+      "keys": [
+        "Prefix",
+        "d"
+      ],
+      "hint": "Prefix, then d. The terminal closes but the session keeps running.",
+      "verify": {
+        "type": "tmuxDetach"
+      },
+      "showme": null,
+      "why": "Detach is the whole point: close the laptop, come back, everything is still there."
+    }
+  ]
+}

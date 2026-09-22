@@ -32,6 +32,7 @@ Item {
   function hint() { if (service) service.showHint() }
   function showme() { if (service) service.showMe() }
   function debug() { return service ? JSON.stringify({ windowSeen: service.windowSeen, activeSeen: service.activeSeen, activeAtStart: service.activeAtStart, layerSeen: service.layerSeen, practice: service.practiceAddresses, snap: service.clientsSnapshot.length, captureStart: service.captureStart, verify: service.step ? service.step.verify : null, stepStart: service.stepStart ? service.stepStart.address : null, info: service.practiceInfo().map(function(c){ return c.address + ":" + c.focusHistoryID + ":" + c.workspace.id }) }) : "{}" }
+  function tmuxdebug() { var t = service ? service.tmuxState : null; return t ? JSON.stringify({ active: t.active, lastEvent: t.lastEvent, serial: t.eventSerial, panes: t.paneCount, windows: t.windowCount, added: t.windowsAdded, prefix: t.prefixSeen, watchPrefix: t.watchPrefix, layout: t.layout, order: t.windowOrder, orderStart: t.windowOrderAtStart, changed: t.orderChanged() }) : "none" }
   function state() { return service ? JSON.stringify({ phase: service.phase, step: service.stepIndex, results: service.results }) : "{}" }
 
   readonly property int pad: Style.space(14)
@@ -181,7 +182,8 @@ Item {
   readonly property var lessonTitles: ({
     "hyprland.essentials": "Essentials", "hyprland.windows-1": "Windows I \u2014 focus & tiling",
     "hyprland.windows-2": "Windows II \u2014 size & shape", "hyprland.windows-3": "Windows III \u2014 groups",
-    "hyprland.workspaces": "Workspaces", "hyprland.scratchpad": "Scratchpad", "hyprland.panels": "Panels & tools"
+    "hyprland.workspaces": "Workspaces", "hyprland.scratchpad": "Scratchpad", "hyprland.panels": "Panels & tools",
+    "tmux.sessions": "Sessions & windows", "tmux.panes": "Panes"
   })
   function lessonTitle(id) { return lessonTitles[id] || id }
 

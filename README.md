@@ -4,7 +4,7 @@ Learn Omarchy shortcuts by doing. A free Omarchy 4 shell plugin that guides
 you through the real keybindings on your real desktop and confirms each one
 actually happened. Companion to the free Stevinator Omarchy course.
 
-**Status: milestone 3 — all seven Hyprland lessons run end to end; progress persists.** See [DESIGN.md](DESIGN.md) for the plan.
+**Status: milestone 4 — Hyprland (7 lessons) and Tmux (2 lessons) tracks run end to end.** See [DESIGN.md](DESIGN.md) for the plan.
 
 ## Requirements
 
@@ -140,3 +140,35 @@ Platform findings from this milestone (all handled in the engine):
   Lesson text says to try both keys.
 - `hyprctl clients` snapshots are queued, not dropped, when one is already
   running; a 600 ms safety-net re-check runs while any step is waiting.
+
+## Milestone 4 — the Tmux track
+
+Two lessons, 18 steps: *Sessions & windows* (prefix, new/rename/switch/move/
+kill window, session tree, session switch, detach) and *Panes* (split beside/
+below/without prefix, focus, resize, zoom, close, reload config).
+
+How it observes Tmux (`TmuxVerify.qml`):
+
+- A **private tmux server** (`tmux -L superkey`) with two sessions,
+  `practice` and `scratch`. The practice terminal is
+  `ghostty -e tmux -L superkey attach -t practice`. Your own tmux server and
+  sessions are never touched; your `~/.config/tmux/tmux.conf` still loads, so
+  you practice *your* bindings.
+- A **control-mode client** (`tmux -C attach`) on the same server turns
+  `%window-add`, `%layout-change` (pane count, `{`/`[` orientation, `Z` zoom
+  flag), `%window-pane-changed`, `%session-window-changed`,
+  `%pane-mode-changed`, `%client-detached`, `%message` into state.
+- Things control mode can't see are **polled every 400 ms**: pane count and
+  window order (`swap-window` emits nothing), the visible client's session
+  (`switch-client` only changes *that* client), and `#{client_prefix}` for
+  the prefix step.
+- **Reload detection**: `display-message` only reaches its target client, so
+  the user's "Configuration reloaded" never reaches us. For that one step
+  the private server's reload binding is extended with a message to the
+  control client; the reload itself restores the original binding, and the
+  user's config file is never modified.
+- Teardown kills the private server; the practice terminal closes with it.
+
+Not automatable in tests: the prefix step. `tmux send-keys` types into the
+*pane* and bypasses key bindings, so only a real keypress arms the prefix.
+The `#{client_prefix}` poll is documented tmux behaviour; verify it by hand.
