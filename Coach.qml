@@ -28,8 +28,10 @@ Item {
   function start(lessonId) { if (service) service.startLesson(lessonId || "hyprland.workspaces"); opened = true }
   function stop() { if (service) service.stopLesson() }
   function skip() { if (service) service.skipStep() }
+  function confirm() { if (service) service.continueStep() }
   function hint() { if (service) service.showHint() }
   function showme() { if (service) service.showMe() }
+  function debug() { return service ? JSON.stringify({ windowSeen: service.windowSeen, activeSeen: service.activeSeen, activeAtStart: service.activeAtStart, layerSeen: service.layerSeen, practice: service.practiceAddresses, snap: service.clientsSnapshot.length, captureStart: service.captureStart, verify: service.step ? service.step.verify : null, stepStart: service.stepStart ? service.stepStart.address : null, info: service.practiceInfo().map(function(c){ return c.address + ":" + c.focusHistoryID + ":" + c.workspace.id }) }) : "{}" }
   function state() { return service ? JSON.stringify({ phase: service.phase, step: service.stepIndex, results: service.results }) : "{}" }
 
   readonly property int pad: Style.space(14)
@@ -88,6 +90,43 @@ Item {
           }
         }
 
+        // Lesson map (idle)
+        Column {
+          width: parent.width
+          visible: root.service && !root.service.lesson && root.service.index
+          spacing: Style.space(4)
+          Repeater {
+            model: root.service && root.service.index ? root.service.index.tracks : []
+            delegate: Column {
+              required property var modelData
+              width: parent.width
+              spacing: Style.space(3)
+              Text { text: modelData.title + " \u2014 " + modelData.blurb; color: Util.alpha(Color.popups.text, 0.7); font.family: Style.font.family; font.pixelSize: Style.font.bodySmall }
+              Repeater {
+                model: modelData.lessons
+                delegate: Rectangle {
+                  required property string modelData
+                  readonly property var prog: root.service ? root.service.lessonProgress(modelData) : null
+                  width: parent.width; height: Style.space(26); radius: Style.space(4)
+                  color: lm.containsMouse ? Util.alpha(Color.accent, 0.25) : Util.alpha(Color.popups.text, 0.06)
+                  Row {
+                    anchors.fill: parent; anchors.leftMargin: Style.space(8); anchors.rightMargin: Style.space(8); spacing: Style.space(8)
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: root.lessonTitle(modelData); color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: prog ? (prog.done + prog.loose) + "/" + prog.total + (prog.done + prog.loose === prog.total ? " \u2713" : "") : ""; color: Color.accent; font.family: Style.font.family; font.pixelSize: Style.font.bodySmall }
+                  }
+                  MouseArea { id: lm; anchors.fill: parent; hoverEnabled: true; onClicked: root.service.startLesson(modelData) }
+                }
+              }
+            }
+          }
+        }
+
+        // Step note (loose verification)
+        Text {
+          width: parent.width; visible: text !== ""; text: root.phase === "waiting" ? root.stepNote() : ""
+          color: Util.alpha(Color.popups.text, 0.55); font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap
+        }
+
         // Instruction
         Text {
           width: parent.width
@@ -127,21 +166,38 @@ Item {
         // Actions
         Row {
           spacing: Style.space(8)
-          CoachButton { text: "Start lesson"; visible: !(root.service && root.service.lesson); onClicked: root.service.startLesson("hyprland.workspaces") }
+          CoachButton { text: "Continue"; visible: root.step !== null && root.phase === "waiting" && root.step.verify && root.step.verify.type === "loose"; onClicked: root.service.continueStep() }
           CoachButton { text: "Hint"; visible: root.step !== null && root.phase === "waiting"; onClicked: root.service.showHint() }
           CoachButton { text: "Show me"; visible: root.step !== null && root.phase === "waiting" && root.step.showme; onClicked: root.service.showMe() }
           CoachButton { text: "Skip"; visible: root.step !== null && root.phase === "waiting"; onClicked: root.service.skipStep() }
-          CoachButton { text: "Again"; visible: root.service && root.service.finished; onClicked: root.service.startLesson("hyprland.workspaces") }
+          CoachButton { text: "Again"; visible: root.service && root.service.finished; onClicked: root.service.startLesson(root.service.lesson.id) }
+          CoachButton { text: "Lessons"; visible: root.service && (root.service.finished || !root.service.lesson); onClicked: { if (root.service) root.service.stopLesson() } }
           CoachButton { text: "Close"; onClicked: { if (root.service) root.service.stopLesson(); root.close() } }
         }
       }
     }
   }
 
+  readonly property var lessonTitles: ({
+    "hyprland.essentials": "Essentials", "hyprland.windows-1": "Windows I \u2014 focus & tiling",
+    "hyprland.windows-2": "Windows II \u2014 size & shape", "hyprland.windows-3": "Windows III \u2014 groups",
+    "hyprland.workspaces": "Workspaces", "hyprland.scratchpad": "Scratchpad", "hyprland.panels": "Panels & tools"
+  })
+  function lessonTitle(id) { return lessonTitles[id] || id }
+
   function summaryText() {
-    var done = 0, skipped = 0
-    for (var k in service.results) { if (service.results[k] === "done") done++; else skipped++ }
-    return done + " done, " + skipped + " skipped. Read more in Module " + service.lesson.course.module + ", section " + service.lesson.course.section + "."
+    var done = 0, loose = 0, skipped = 0
+    for (var k in service.results) { if (service.results[k] === "done") done++; else if (service.results[k] === "loose") loose++; else skipped++ }
+    var t = done + " verified"
+    if (loose) t += ", " + loose + " confirmed by you"
+    if (skipped) t += ", " + skipped + " skipped"
+    return t + ". Read more in Module " + service.lesson.course.module + ", section " + service.lesson.course.section + "."
+  }
+  function stepNote() {
+    if (!step || !step.verify) return ""
+    if (step.verify.type === "loose") return "I can't see this one \u2014 press Continue when you've done it."
+    if (step.verify.loose === true) return "I can only see that a menu or panel opened, not which one."
+    return ""
   }
 
   component CoachButton: Rectangle {

@@ -1,0 +1,156 @@
+{
+  "id": "hyprland.windows-1",
+  "track": "hyprland",
+  "title": "Windows I — focus & tiling",
+  "course": {
+    "module": 3,
+    "section": "3.11",
+    "url": "https://stevinator.com/courses/omarchy/module-03"
+  },
+  "setup": {
+    "practiceWindows": 2,
+    "isolate": true
+  },
+  "steps": [
+    {
+      "id": "focus",
+      "say": "Move focus to the other practice window with an arrow.",
+      "keys": [
+        "Super",
+        "←/→"
+      ],
+      "hint": "Super + Left/Right/Up/Down moves focus in that direction. Two practice windows sit side by side.",
+      "verify": {
+        "type": "focusChanged"
+      },
+      "showme": null,
+      "why": "Focus follows direction, not tab order. Think spatially."
+    },
+    {
+      "id": "swap",
+      "say": "Swap the two windows.",
+      "keys": [
+        "Super",
+        "Shift",
+        "←/→"
+      ],
+      "hint": "Add Shift and the focused window trades places with its neighbour.",
+      "verify": {
+        "type": "practiceMoved"
+      },
+      "showme": "hl.dsp.window.swap({ direction = \"l\" })",
+      "why": "Swap is how you arrange a layout without the mouse.",
+      "revert": "hl.dsp.window.swap({ direction = \"r\" })"
+    },
+    {
+      "id": "float",
+      "say": "Make the focused window float.",
+      "keys": [
+        "Super",
+        "T"
+      ],
+      "hint": "Super + T toggles between tiled and floating.",
+      "verify": {
+        "type": "practiceFloating",
+        "value": true
+      },
+      "showme": "hl.dsp.window.float({ action = \"toggle\" })",
+      "why": "Floating is for dialogs, pop-outs, and 'just let me drag this'.",
+      "revert": "hl.dsp.window.float({ action = \"toggle\" })"
+    },
+    {
+      "id": "tile",
+      "say": "Tile it again.",
+      "keys": [
+        "Super",
+        "T"
+      ],
+      "hint": "Same key — it's a toggle.",
+      "verify": {
+        "type": "practiceFloating",
+        "value": false
+      },
+      "showme": null,
+      "why": "Tiling is the default for a reason: no overlapping, no hunting."
+    },
+    {
+      "id": "fullscreen",
+      "say": "Go fullscreen.",
+      "keys": [
+        "Super",
+        "F"
+      ],
+      "hint": "Super + F: the window fills the screen, bar and all hidden.",
+      "verify": {
+        "type": "practiceFullscreen",
+        "value": 2
+      },
+      "showme": "hl.dsp.window.fullscreen({ mode = \"fullscreen\" })",
+      "why": "Fullscreen for focus; press it again to come back.",
+      "revert": "hl.dsp.window.fullscreen({ mode = \"fullscreen\" })"
+    },
+    {
+      "id": "unfullscreen",
+      "say": "And back out of fullscreen.",
+      "keys": [
+        "Super",
+        "F"
+      ],
+      "hint": "Super + F again.",
+      "verify": {
+        "type": "practiceFullscreen",
+        "value": 0
+      },
+      "showme": null,
+      "why": "Every fullscreen shortcut in Omarchy is a toggle."
+    },
+    {
+      "id": "fullwidth",
+      "say": "Try full width instead.",
+      "keys": [
+        "Super",
+        "Alt",
+        "F"
+      ],
+      "hint": "Super + Alt + F maximizes inside the tiling area — the bar stays visible.",
+      "verify": {
+        "type": "practiceFullscreen",
+        "value": 1
+      },
+      "showme": "hl.dsp.window.fullscreen({ mode = \"maximized\" })",
+      "why": "Full width when you want space but still want the bar.",
+      "revert": "hl.dsp.window.fullscreen({ mode = \"maximized\" })"
+    },
+    {
+      "id": "unfullwidth",
+      "say": "Back to normal.",
+      "keys": [
+        "Super",
+        "Alt",
+        "F"
+      ],
+      "hint": "Same key again.",
+      "verify": {
+        "type": "practiceFullscreen",
+        "value": 0
+      },
+      "showme": null,
+      "why": "Toggle."
+    },
+    {
+      "id": "split",
+      "say": "Change the split orientation.",
+      "keys": [
+        "Super",
+        "J"
+      ],
+      "hint": "Super + J flips side-by-side into stacked (and back). If nothing moves, press it once more.",
+      "verify": {
+        "type": "practiceMoved"
+      },
+      "showme": "hl.dsp.layout(\"togglesplit\")",
+      "why": "Orientation is how you turn two columns into two rows.",
+      "revert": "hl.dsp.layout(\"togglesplit\")"
+    }
+  ]
+}

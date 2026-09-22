@@ -4,7 +4,7 @@ Learn Omarchy shortcuts by doing. A free Omarchy 4 shell plugin that guides
 you through the real keybindings on your real desktop and confirms each one
 actually happened. Companion to the free Stevinator Omarchy course.
 
-**Status: milestone 2 — first lesson (Workspaces) works end to end.** See [DESIGN.md](DESIGN.md) for the plan.
+**Status: milestone 3 — all seven Hyprland lessons run end to end; progress persists.** See [DESIGN.md](DESIGN.md) for the plan.
 
 ## Requirements
 
@@ -90,3 +90,53 @@ Two platform findings worth knowing (both handled):
   targets correctly. Same for `window.move`.
 - `Hyprland.toplevels[*].workspace` refreshes asynchronously after a move;
   window-based steps poll every 250 ms while waiting.
+
+## Milestone 3 — the Hyprland track
+
+Seven lessons, 45 steps (`lessons/index.json` lists them; the coach shows
+a lesson map with per-lesson progress when idle):
+
+| Lesson | Steps | Notes |
+|---|---|---|
+| Essentials | 6 | menu, terminal, browser, keybindings, close, system menu |
+| Windows I — focus & tiling | 9 | focus, swap, float, fullscreen, full width, split |
+| Windows II — size & shape | 5 | resize both axes, save/restore width (self-confirmed), pop |
+| Windows III — groups | 2 | group toggle, cycle (self-confirmed) |
+| Workspaces | 7 | switch, next/prev, move with/without follow, former |
+| Scratchpad | 3 | send, show, hide |
+| Panels & tools | 13 | every `Super+Ctrl+…` panel, menus, btop, calculator, pickers |
+
+Progress lives in `~/.local/state/superkey/progress.json` (per lesson:
+verified / self-confirmed / skipped counts). "Reset progress" is not in the
+UI yet; delete the file.
+
+Verification types (all *observed*, never inferred from keys):
+`workspace`, `workspaceDelta`, `workspaceSequence`, `practiceWindowOnWorkspace`,
+`practiceFloating`, `practiceFullscreen`, `practicePinned`, `practiceGrouped`,
+`practiceOnSpecial`, `practiceResized`, `practiceMoved`, `practiceClosed`,
+`focusChanged`, `special`, `windowClass`, `layer`, `loose`.
+`loose` steps (nothing observable) ask the user to press **Continue** and
+are recorded separately from verified ones. `layer` steps with `loose: true`
+can only see *a* menu/panel opened, not which — the coach says so.
+
+Platform findings from this milestone (all handled in the engine):
+
+- **Scrolling layout.** A workspace can be in Omarchy's *scrolling* layout
+  (`~/.local/state/omarchy/workspace-layouts/<n>.lua`); split toggling and
+  vertical resize behave differently there. Window lessons set
+  `"isolate": true` and run on an empty, non-scrolling workspace, then
+  return you to where you were. This also keeps practice away from your
+  real windows.
+- **Bar panels don't emit `openlayer`.** Audio/Bluetooth/… share one
+  keepLoaded `omarchy-keyboard-panel` surface; `hyprctl layers` lists it only
+  while mapped, so layer steps poll that as well as listening for events.
+- **Theme and background pickers are the same overlay** (`omarchy-image-selector`).
+- **`ghostty --gtk-single-instance`** means a new terminal can take several
+  seconds to appear; the engine waits, it never times a step out.
+- **Single-instance apps** (the browser) may not open a *new* window;
+  `windowClass` also accepts focus moving onto that class.
+- **`hl.dsp.group.toggle()`** is the group binding (not `window.group`).
+- Resize is edge-relative: `Super+=` on the rightmost window is a no-op.
+  Lesson text says to try both keys.
+- `hyprctl clients` snapshots are queued, not dropped, when one is already
+  running; a 600 ms safety-net re-check runs while any step is waiting.

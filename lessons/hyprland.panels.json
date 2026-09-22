@@ -1,0 +1,233 @@
+{
+  "id": "hyprland.panels",
+  "track": "hyprland",
+  "title": "Panels & tools",
+  "course": {
+    "module": 15,
+    "section": "15.1",
+    "url": "https://stevinator.com/courses/omarchy/module-15"
+  },
+  "setup": {
+    "practiceWindows": 0
+  },
+  "steps": [
+    {
+      "id": "audio",
+      "say": "Open the audio panel.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "A"
+      ],
+      "hint": "Super + Ctrl + A. Escape closes it.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-keyboard-panel",
+        "loose": true
+      },
+      "showme": "omarchy-shell shell toggle omarchy.audio",
+      "why": "Volume, output device, mic — without touching the mouse."
+    },
+    {
+      "id": "network",
+      "say": "Open the network panel.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "W"
+      ],
+      "hint": "Super + Ctrl + W (W for Wi-Fi).",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-keyboard-panel",
+        "loose": true
+      },
+      "showme": "omarchy-shell shell toggle omarchy.network",
+      "why": "Same idea, different letter."
+    },
+    {
+      "id": "bluetooth",
+      "say": "Open the Bluetooth panel.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "B"
+      ],
+      "hint": "Super + Ctrl + B.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-keyboard-panel",
+        "loose": true
+      },
+      "showme": "omarchy-shell shell toggle omarchy.bluetooth",
+      "why": "B for Bluetooth."
+    },
+    {
+      "id": "display",
+      "say": "Open the display panel.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "D"
+      ],
+      "hint": "Super + Ctrl + D.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-keyboard-panel",
+        "loose": true
+      },
+      "showme": "omarchy-shell shell toggle omarchy.monitor",
+      "why": "Brightness, night light, scaling."
+    },
+    {
+      "id": "power",
+      "say": "Open the power panel.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "P"
+      ],
+      "hint": "Super + Ctrl + P.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-keyboard-panel",
+        "loose": true
+      },
+      "showme": "omarchy-shell shell toggle omarchy.power",
+      "why": "Power profiles and battery."
+    },
+    {
+      "id": "capture",
+      "say": "Open the capture menu.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "C"
+      ],
+      "hint": "Super + Ctrl + C: screenshots, screen recording, color picker.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-menu",
+        "loose": true
+      },
+      "showme": "omarchy-menu toggle capture",
+      "why": "Everything 'take a picture of the screen' lives here."
+    },
+    {
+      "id": "emoji",
+      "say": "Open the emoji picker.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "E"
+      ],
+      "hint": "Super + Ctrl + E, type to search, Enter to copy.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-emojis"
+      },
+      "showme": "omarchy-shell shell toggle omarchy.emojis",
+      "why": "Emoji without leaving the keyboard."
+    },
+    {
+      "id": "clipboard",
+      "say": "Open the clipboard history.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "V"
+      ],
+      "hint": "Super + Ctrl + V shows what you copied recently.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-clipboard"
+      },
+      "showme": "omarchy-shell shell toggle omarchy.clipboard",
+      "why": "Ctrl + V pastes the last thing; Super + Ctrl + V lets you pick."
+    },
+    {
+      "id": "activity",
+      "say": "Open the activity monitor.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "T"
+      ],
+      "hint": "Super + Ctrl + T launches btop. Press q to quit it.",
+      "verify": {
+        "type": "windowClass",
+        "class": "org.omarchy.btop"
+      },
+      "showme": "omarchy-launch-tui btop",
+      "why": "T for top. CPU, memory, processes."
+    },
+    {
+      "id": "calculator",
+      "say": "Open the calculator.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "Q"
+      ],
+      "hint": "Super + Ctrl + Q.",
+      "verify": {
+        "type": "windowClass",
+        "class": "omacalc"
+      },
+      "showme": "omacalc",
+      "why": "Quick maths, then close it with Super + W."
+    },
+    {
+      "id": "apps",
+      "say": "Open the app launcher.",
+      "keys": [
+        "Super",
+        "Alt",
+        "Space"
+      ],
+      "hint": "Super + Alt + Space jumps straight to the apps list.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-menu",
+        "loose": true
+      },
+      "showme": "omarchy-menu toggle apps",
+      "why": "Faster than Super + Space → Apps when you know what you want."
+    },
+    {
+      "id": "theme",
+      "say": "Open the theme picker.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "Shift",
+        "Space"
+      ],
+      "hint": "Super + Ctrl + Shift + Space. Escape to back out without changing anything.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-image-selector",
+        "loose": true
+      },
+      "showme": "omarchy-menu toggle theme",
+      "why": "Themes restyle the whole desktop at once."
+    },
+    {
+      "id": "background",
+      "say": "Open the background picker.",
+      "keys": [
+        "Super",
+        "Ctrl",
+        "Space"
+      ],
+      "hint": "Super + Ctrl + Space. Escape to keep your current background.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-image-selector",
+        "loose": true
+      },
+      "showme": "omarchy-menu toggle background",
+      "why": "Backgrounds belong to the theme; this cycles within it."
+    }
+  ]
+}

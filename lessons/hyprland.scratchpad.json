@@ -1,0 +1,61 @@
+{
+  "id": "hyprland.scratchpad",
+  "track": "hyprland",
+  "title": "Scratchpad",
+  "course": {
+    "module": 3,
+    "section": "3.29",
+    "url": "https://stevinator.com/courses/omarchy/module-03"
+  },
+  "setup": {
+    "practiceWindows": 1,
+    "isolate": true
+  },
+  "steps": [
+    {
+      "id": "send",
+      "say": "Send the practice window to the scratchpad.",
+      "keys": [
+        "Super",
+        "Alt",
+        "S"
+      ],
+      "hint": "Focus the practice window, then Super + Alt + S. It disappears into the scratchpad.",
+      "verify": {
+        "type": "practiceOnSpecial"
+      },
+      "showme": "hl.dsp.window.move({ workspace = \"special:scratchpad\", follow = false })",
+      "why": "The scratchpad is a hidden workspace for things you want a keypress away.",
+      "revert": "hl.dsp.window.move({ window = \"$WIN\", workspace = \"$WS\", follow = false })"
+    },
+    {
+      "id": "show",
+      "say": "Show the scratchpad.",
+      "keys": [
+        "Super",
+        "S"
+      ],
+      "hint": "Super + S overlays the scratchpad on whatever you're doing.",
+      "verify": {
+        "type": "special"
+      },
+      "showme": "hl.dsp.workspace.toggle_special(\"scratchpad\")",
+      "why": "Terminal, notes, music — put them here and summon them anywhere.",
+      "revert": "hl.dsp.workspace.toggle_special(\"scratchpad\")"
+    },
+    {
+      "id": "hide",
+      "say": "Hide it again.",
+      "keys": [
+        "Super",
+        "S"
+      ],
+      "hint": "Same key.",
+      "verify": {
+        "type": "loose"
+      },
+      "showme": null,
+      "why": "Toggle on, toggle off. You never leave your workspace."
+    }
+  ]
+}

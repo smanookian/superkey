@@ -1,0 +1,46 @@
+{
+  "id": "hyprland.windows-3",
+  "track": "hyprland",
+  "title": "Windows III — groups",
+  "course": {
+    "module": 3,
+    "section": "3.26",
+    "url": "https://stevinator.com/courses/omarchy/module-03"
+  },
+  "setup": {
+    "practiceWindows": 2,
+    "isolate": true
+  },
+  "steps": [
+    {
+      "id": "group",
+      "say": "Turn the focused window into a group.",
+      "keys": [
+        "Super",
+        "G"
+      ],
+      "hint": "Super + G makes a tabbed group out of the focused window. Other windows can join it.",
+      "verify": {
+        "type": "practiceGrouped"
+      },
+      "showme": "hl.dsp.group.toggle()",
+      "why": "Groups are tabs for tiled windows: several windows, one slot.",
+      "revert": "hl.dsp.group.toggle()"
+    },
+    {
+      "id": "cycle",
+      "say": "Cycle to the next window in the group.",
+      "keys": [
+        "Super",
+        "Alt",
+        "Tab"
+      ],
+      "hint": "With two windows in a group, Super + Alt + Tab switches tabs. Move the other practice window in with Super + Alt + Arrow first.",
+      "verify": {
+        "type": "loose"
+      },
+      "showme": null,
+      "why": "Alt + Tab inside a group works like tabs in a browser."
+    }
+  ]
+}

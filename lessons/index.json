@@ -1,0 +1,18 @@
+{
+  "tracks": [
+    {
+      "id": "hyprland",
+      "title": "Hyprland",
+      "blurb": "Windows, workspaces, and the Omarchy desktop.",
+      "lessons": [
+        "hyprland.essentials",
+        "hyprland.windows-1",
+        "hyprland.windows-2",
+        "hyprland.windows-3",
+        "hyprland.workspaces",
+        "hyprland.scratchpad",
+        "hyprland.panels"
+      ]
+    }
+  ]
+}

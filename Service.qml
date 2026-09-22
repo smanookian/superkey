@@ -3,9 +3,9 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 
-// Superkey lesson engine (headless). Owns: lesson loading, step state,
-// practice windows, verification against live Hyprland state.
-// Coach.qml only renders what's here and calls the functions below.
+// Superkey lesson engine (headless). Owns: lesson index + loading, step state,
+// practice windows, verification against live Hyprland state, progress file.
+// Coach.qml / Start.qml only render what's here and call the functions below.
 Item {
   id: root
 
@@ -14,31 +14,74 @@ Item {
 
   // ---- live Hyprland state --------------------------------------------
   readonly property int focusedWorkspace: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1
-  property int previousWorkspace: -1
-  property var workspaceHistory: []      // last few focused ids, newest last
+  readonly property string focusedWorkspaceName: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.name : ""
+
+  // ---- lesson index ----------------------------------------------------
+  property var index: null               // parsed lessons/index.json
+  readonly property string lessonsDir: Qt.resolvedUrl("lessons/")
+
+  FileView {
+    id: indexFile
+    path: Qt.resolvedUrl("lessons/index.json")
+    onLoaded: { try { root.index = JSON.parse(text()) } catch (e) { root.lastMessage = "index.json: " + e } }
+  }
+
+  // ---- progress ---------------------------------------------------------
+  readonly property string stateDir: Quickshell.env("XDG_STATE_HOME") !== "" ? Quickshell.env("XDG_STATE_HOME") + "/superkey" : Quickshell.env("HOME") + "/.local/state/superkey"
+  property var progress: ({ version: 1, lessons: {}, settings: { muted: false, reduceMotion: false } })
+
+  Process { id: mkdir; command: ["mkdir", "-p", root.stateDir] }
+  FileView {
+    id: progressFile
+    path: root.stateDir + "/progress.json"
+    blockLoading: true
+    onLoaded: { try { var p = JSON.parse(text()); if (p && p.version === 1) root.progress = p } catch (e) {} }
+  }
+  Component.onCompleted: mkdir.running = true
+
+  function saveProgress() {
+    progressFile.setText(JSON.stringify(progress, null, 2))
+  }
+
+  function lessonProgress(id) { return progress.lessons[id] || null }
+
+  function recordLessonResult() {
+    if (!lesson) return
+    var done = 0, skipped = 0, loose = 0
+    for (var k in results) { if (results[k] === "done") done++; else if (results[k] === "loose") loose++; else skipped++ }
+    var p = ({}); for (var i in progress) p[i] = progress[i]
+    var lessons = ({}); for (var j in progress.lessons) lessons[j] = progress.lessons[j]
+    lessons[lesson.id] = { done: done, loose: loose, skipped: skipped, total: lesson.steps.length, completedAt: new Date().toISOString() }
+    p.lessons = lessons
+    progress = p
+    saveProgress()
+  }
+
+  function resetProgress() {
+    progress = ({ version: 1, lessons: {}, settings: progress.settings })
+    saveProgress()
+  }
 
   // ---- lesson state ----------------------------------------------------
-  property var lesson: null              // parsed lesson JSON
+  property var lesson: null
   property int stepIndex: -1
   readonly property var step: lesson && stepIndex >= 0 && stepIndex < lesson.steps.length ? lesson.steps[stepIndex] : null
-  readonly property bool running: lesson !== null && stepIndex >= 0 && !finished
   property bool finished: false
   property string phase: "idle"          // idle | waiting | success | done
   property bool hintShown: false
-  property var results: ({})             // stepId -> "done" | "skipped"
+  property var results: ({})             // stepId -> "done" | "loose" | "skipped"
   property string lastMessage: ""
+  property int stepStartWorkspace: -1
+  property var stepStart: ({})           // snapshot of practice window state at step start
 
   // ---- practice windows -----------------------------------------------
-  // Only windows Superkey spawned. Matched by title on openwindow; tracked by address.
   readonly property string practiceTitle: "Superkey practice"
   property var practiceAddresses: []
   property bool awaitingPractice: false
+  property int practiceWanted: 0
 
-  function isPractice(tl) {
-    var a = String(tl.address)
-    if (a.indexOf("0x") !== 0) a = "0x" + a
-    return practiceAddresses.indexOf(a) !== -1
-  }
+  function norm(a) { a = String(a); return a.indexOf("0x") === 0 ? a : "0x" + a }
+  function isPractice(tl) { return practiceAddresses.indexOf(norm(tl.address)) !== -1 }
 
   function practiceClients() {
     var out = [], tl = Hyprland.toplevels.values
@@ -48,30 +91,24 @@ Item {
 
   function practiceClient() {
     var all = practiceClients()
-    // prefer the focused one, then one on the current workspace
     for (var i = 0; i < all.length; i++) if (all[i].activated) return all[i]
     for (var j = 0; j < all.length; j++) if (all[j].workspace && all[j].workspace.id === focusedWorkspace) return all[j]
     return all.length ? all[0] : null
   }
 
-  // Close any window with our practice title, tracked or not (stray from a crash).
   function closeStrayPractice() {
     var tl = Hyprland.toplevels.values
     for (var i = 0; i < tl.length; i++)
-      if (tl[i].title === practiceTitle) {
-        var a = String(tl[i].address); if (a.indexOf("0x") !== 0) a = "0x" + a
-        Hyprland.dispatch("hl.dsp.window.close({ window = \"address:" + a + "\" })")
-      }
+      if (tl[i].title === practiceTitle)
+        Hyprland.dispatch("hl.dsp.window.close({ window = \"address:" + norm(tl[i].address) + "\" })")
   }
 
-  property int practiceWanted: 0
-
   function spawnPractice(count) {
-    practiceWanted = count
+    practiceWanted = practiceAddresses.length + count
     awaitingPractice = true
     for (var i = 0; i < count; i++)
       Quickshell.execDetached(["ghostty", "--title=" + practiceTitle, "-e", "bash", "-c",
-        "printf '\\n  Superkey practice window.\\n  Do the shortcuts on THIS window when asked.\\n\\n'; exec bash"])
+        "printf '\\n  Superkey practice window " + (i + 1) + ".\\n  Do the shortcuts on THIS window when asked.\\n\\n'; exec bash"])
   }
 
   function closePractice() {
@@ -80,60 +117,167 @@ Item {
     practiceAddresses = []
   }
 
+  // Snapshot of every practice window, for before/after comparisons. Uses
+  // `hyprctl clients -j` because toplevel objects don't expose geometry.
+  property var clientsSnapshot: []
+  Process {
+    id: clientsProc
+    command: ["hyprctl", "clients", "-j"]
+    stdout: StdioCollector { onStreamFinished: {
+      try { root.clientsSnapshot = JSON.parse(text) } catch (e) {}
+      root.verifyNow()
+      if (root.refreshPending) { root.refreshPending = false; root.refreshClients() }
+    } }
+  }
+  property bool refreshPending: false
+  function refreshClients() {
+    if (clientsProc.running) { refreshPending = true; return }
+    clientsProc.running = true
+  }
+  function practiceInfo() {
+    var out = []
+    for (var i = 0; i < clientsSnapshot.length; i++) {
+      var c = clientsSnapshot[i]
+      if (practiceAddresses.indexOf(c.address) !== -1) out.push(c)
+    }
+    // Most recently focused first (focusHistoryID 0 = currently focused).
+    out.sort(function(a, b) { return a.focusHistoryID - b.focusHistoryID })
+    return out
+  }
+
+  // ---- practice workspace (isolation) ---------------------------------
+  // Window lessons run on an empty workspace that is not in Omarchy's
+  // "scrolling" layout (split/resize semantics differ there), and away from
+  // the user's own windows. Scrolling workspaces are the ones with a file in
+  // ~/.local/state/omarchy/workspace-layouts/<n>.lua.
+  property var scrollingWorkspaces: []
+  property int homeWorkspace: -1
+  property int practiceWorkspace: -1
+  Process {
+    id: layoutsProc
+    command: ["bash", "-c", "ls \"${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/workspace-layouts\" 2>/dev/null | sed 's/\\.lua$//'"]
+    stdout: StdioCollector { onStreamFinished: {
+      var ids = []
+      var lines = text.split("\n")
+      for (var i = 0; i < lines.length; i++) { var n = parseInt(lines[i]); if (!isNaN(n)) ids.push(n) }
+      root.scrollingWorkspaces = ids
+      root.beginLesson()
+    } }
+  }
+
+  function pickPracticeWorkspace() {
+    var occupied = {}
+    var ws = Hyprland.workspaces.values
+    for (var i = 0; i < ws.length; i++) occupied[ws[i].id] = true
+    for (var n = 2; n <= 10; n++) {
+      if (scrollingWorkspaces.indexOf(n) !== -1) continue
+      if (occupied[n]) continue
+      return n
+    }
+    return -1
+  }
+
   // ---- lesson control -------------------------------------------------
+  property var pendingLesson: null
+
   function startLesson(id) {
-    lessonLoader.path = Qt.resolvedUrl("lessons/" + id + ".json")
+    lessonLoader.path = ""
+    lessonLoader.path = lessonsDir + id + ".json"
   }
 
   FileView {
     id: lessonLoader
     onLoaded: {
       try {
-        var parsed = JSON.parse(text())
-        root.lesson = parsed
-        root.results = ({})
-        root.finished = false
-        root.stepIndex = -1
-        root.closeStrayPractice()
-        root.practiceAddresses = []
-        if (parsed.setup && parsed.setup.practiceWindows > 0) root.spawnPractice(parsed.setup.practiceWindows)
-        root.nextStep()
+        root.pendingLesson = JSON.parse(text())
+        layoutsProc.running = true   // -> beginLesson()
       } catch (e) {
         root.lastMessage = "Lesson failed to load: " + e
       }
     }
   }
 
-  property int stepStartWorkspace: -1
-  property bool armed: false   // true once the step's start-state has been observed
+  function beginLesson() {
+    var parsed = pendingLesson
+    if (!parsed) return
+    pendingLesson = null
+    lesson = parsed
+    results = ({})
+    finished = false
+    stepIndex = -1
+    closeStrayPractice()
+    practiceAddresses = []
+    homeWorkspace = focusedWorkspace
+    practiceWorkspace = -1
+    if (parsed.setup && parsed.setup.isolate) {
+      practiceWorkspace = pickPracticeWorkspace()
+      if (practiceWorkspace !== -1) Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + practiceWorkspace + "\" })")
+    }
+    if (parsed.setup && parsed.setup.practiceWindows > 0) spawnLater.restart()
+    else nextStep()
+  }
+  // Spawn after the workspace switch has landed so the windows open there.
+  Timer { id: spawnLater; interval: 250; onTriggered: { root.spawnPractice(root.lesson.setup.practiceWindows); root.nextStep() } }
 
   function nextStep() {
     if (!lesson) return
     stepIndex += 1
     hintShown = false
+    demoNote = ""
     stepStartWorkspace = focusedWorkspace
-    armed = true
+    seqProgress = 0
+    layerSeen = ""
+    captureLayers = true
+    windowSeen = ""
+    activeAtStart = activeSeen
+    activeSeen = ""
+    specialSeen = false
     if (stepIndex >= lesson.steps.length) {
       finished = true
       phase = "done"
       closePractice()
+      recordLessonResult()
+      goHome()
       return
     }
     phase = "waiting"
-    seqProgress = 0
-    // Focus the practice window for steps that act on it.
+    practiceCountAtStart = practiceAddresses.length
     var s = lesson.steps[stepIndex]
-    if (s.verify && s.verify.type.indexOf("practiceWindow") === 0) {
-      var pc = practiceClient()
-      if (pc) Hyprland.dispatch("hl.dsp.focus({ window = \"address:" + pc.address + "\" })")
+    if (s.verify && s.verify.type.indexOf("practice") === 0) {
+      var want = lesson.setup && lesson.setup.practiceWindows ? lesson.setup.practiceWindows : 1
+      if (!awaitingPractice && practiceAddresses.length < want) {
+        // The user closed one early (or a previous step closed it). Bring it back.
+        spawnPractice(want - practiceAddresses.length)
+        practiceCountAtStart = want
+      } else {
+        var pc = practiceClient()
+        if (pc) Hyprland.dispatch("hl.dsp.focus({ window = \"address:" + norm(pc.address) + "\" })")
+      }
     }
+    // Take the "before" snapshot slightly after focusing so geometry is settled.
+    snapshotTimer.restart()
+  }
+  Timer { id: snapshotTimer; interval: 200; onTriggered: { root.refreshClients(); root.captureStart = true } }
+  property bool captureStart: false
+
+  // Loose steps can't be observed; the user confirms them.
+  function continueStep() {
+    if (!step || phase !== "waiting") return
+    if (step.verify && step.verify.type === "loose") markDone(true)
   }
 
-  function markDone() {
+  property int practiceCountAtStart: 0
+
+  function markDone(loose) {
     if (!step || phase !== "waiting") return
-    if (demoing) { demoNote = "That's the effect. Putting it back…"; demoHold.restart(); return }
+    if (demoing) {
+      demoNote = "That's the effect. Putting it back\u2026"
+      if (step.revert || (step.verify && step.verify.type.indexOf("practice") === 0) || step.verify.type.indexOf("workspace") === 0) demoHold.restart()
+      else { demoNote = "That's it \u2014 close it, then do it yourself."; demoing = false; demoTimeout.stop() }
+      return
+    }
     demoNote = ""
-    var r = ({}); for (var k in results) r[k] = results[k]; r[step.id] = "done"; results = r
+    var r = ({}); for (var k in results) r[k] = results[k]; r[step.id] = loose ? "loose" : "done"; results = r
     phase = "success"
     advanceTimer.restart()
   }
@@ -146,109 +290,184 @@ Item {
 
   function showHint() { hintShown = true }
 
-  // Show me: perform the action, let the user see the effect, revert, then
-  // it's their turn. While `demoing` the verifier reverts instead of passing.
-  property bool demoing: false
-  property string demoNote: ""
-
-  function showMe() {
-    if (!step || !step.showme || phase !== "waiting") return
-    demoing = true
-    demoNote = "Watch…"
-    var pc = practiceClient(); demoWindow = pc ? String(pc.address) : ""
-    Hyprland.dispatch(step.showme)
-    demoTimeout.restart()
-  }
-  property string demoWindow: ""
-  Timer { id: demoTimeout; interval: 2500; onTriggered: root.endDemo() }
-  Timer { id: demoHold; interval: 1200; onTriggered: root.revertDemo() }
-
-  function endDemo() { demoing = false; demoNote = "" }
-
-  function revertDemo() {
-    // Put things back where the step started so the user can do it themselves.
-    if (demoWindow !== "") {
-      var a = demoWindow; if (a.indexOf("0x") !== 0) a = "0x" + a
-      Hyprland.dispatch("hl.dsp.window.move({ window = \"address:" + a + "\", workspace = \"" + stepStartWorkspace + "\", follow = false })")
-    }
-    Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + stepStartWorkspace + "\" })")
-    demoNote = "Now you."
-    demoing = false
-    demoTimeout.stop()
+  function goHome() {
+    if (practiceWorkspace !== -1 && homeWorkspace !== -1) Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + homeWorkspace + "\" })")
+    practiceWorkspace = -1
   }
 
   function stopLesson() {
     closePractice()
+    goHome()
     lesson = null
     stepIndex = -1
     finished = false
     phase = "idle"
+    demoing = false
+    demoNote = ""
   }
 
   Timer { id: advanceTimer; interval: 1400; onTriggered: root.nextStep() }
 
+  // ---- Show me: demo, hold, revert, "Now you." ---------------------------
+  property bool demoing: false
+  property string demoNote: ""
+  property string demoWindow: ""
+
+  function showMe() {
+    if (!step || !step.showme || phase !== "waiting") return
+    demoing = true
+    demoNote = "Watch\u2026"
+    var pc = practiceClient(); demoWindow = pc ? norm(pc.address) : ""
+    if (step.showme.indexOf("hl.") === 0) Hyprland.dispatch(step.showme)
+    else Quickshell.execDetached(["sh", "-c", step.showme])
+    demoTimeout.restart()
+  }
+  Timer { id: demoTimeout; interval: 2500; onTriggered: root.endDemo() }
+  Timer { id: demoHold; interval: 1200; onTriggered: root.revertDemo() }
+  function endDemo() { demoing = false; if (demoNote === "Watch\u2026") demoNote = "" }
+  function revertDemo() {
+    if (step && step.revert) {
+      Hyprland.dispatch(step.revert.replace("$WIN", "address:" + demoWindow).replace("$WS", String(stepStartWorkspace)))
+    } else {
+      if (demoWindow !== "")
+        Hyprland.dispatch("hl.dsp.window.move({ window = \"address:" + demoWindow + "\", workspace = \"" + stepStartWorkspace + "\", follow = false })")
+      Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + stepStartWorkspace + "\" })")
+    }
+    demoNote = "Now you."
+    demoing = false
+    demoTimeout.stop()
+    snapshotTimer.restart()
+  }
+
   // ---- verification ---------------------------------------------------
   property int seqProgress: 0
+  property string layerSeen: ""
+  property string windowSeen: ""
+  property string activeSeen: ""
+  property string activeAtStart: ""
+  property bool specialSeen: false
 
   function verifyNow() {
     if (!step || phase !== "waiting" || !step.verify) return
     var v = step.verify
-    if (v.type === "workspace") {
-      if (focusedWorkspace === v.id && focusedWorkspace !== stepStartWorkspace) markDone()
-    } else if (v.type === "workspaceDelta") {
-      // relative: +1 / -1 from where the step started (wraps ignored on purpose)
-      if (v.delta > 0 ? focusedWorkspace > stepStartWorkspace : focusedWorkspace < stepStartWorkspace) markDone()
-    } else if (v.type === "practiceWindowOnWorkspace") {
-      var all = practiceClients(), onTarget = false
-      for (var i = 0; i < all.length; i++) if (all[i].workspace && all[i].workspace.id === v.id) onTarget = true
+    var info = practiceInfo()
+    if (captureStart) { stepStart = info.length ? JSON.parse(JSON.stringify(info[0])) : ({}); captureStart = false; return }
+
+    switch (v.type) {
+    case "workspace":
+      if (focusedWorkspace === v.id && focusedWorkspace !== stepStartWorkspace) markDone(false); break
+    case "workspaceDelta":
+      if (v.delta > 0 ? focusedWorkspace > stepStartWorkspace : focusedWorkspace < stepStartWorkspace) markDone(false); break
+    case "workspaceSequence":
+      if (seqProgress < v.ids.length && focusedWorkspace === v.ids[seqProgress]) { seqProgress += 1; if (seqProgress === v.ids.length) markDone(false) }
+      break
+    case "practiceWindowOnWorkspace": {
+      var onTarget = false
+      for (var i = 0; i < info.length; i++) if (info[i].workspace && info[i].workspace.id === v.id) onTarget = true
       if (!onTarget) return
-      if (v.follow === true && focusedWorkspace === v.id) markDone()
-      if (v.follow === false && focusedWorkspace !== v.id) markDone()
-    } else if (v.type === "workspaceSequence") {
-      // ids must be visited in order; progress advances as each is seen.
-      if (seqProgress < v.ids.length && focusedWorkspace === v.ids[seqProgress]) {
-        seqProgress += 1
-        if (seqProgress === v.ids.length) markDone()
-      }
+      if (v.follow === true && focusedWorkspace === v.id) markDone(false)
+      if (v.follow === false && focusedWorkspace !== v.id) markDone(false)
+      break }
+    case "layer":       // a layer surface with this namespace appeared (loose if flagged)
+      if (layerSeen === v.namespace) { markDone(v.loose === true); break }
+      if (layersNow.indexOf(v.namespace) !== -1 && layersAtStart.indexOf(v.namespace) === -1) markDone(v.loose === true)
+      break
+    case "windowClass": // a window with this class opened, or focus moved onto one (single-instance apps)
+      if (windowSeen === v["class"] || (activeSeen === v["class"] && activeAtStart !== v["class"])) markDone(false); break
+    case "special":     // scratchpad toggled on
+      if (specialSeen) markDone(false); break
+    case "practiceFloating":
+      if (info.length && info[0].floating === v.value) markDone(false); break
+    case "practiceFullscreen":
+      if (info.length && info[0].fullscreen === v.value) markDone(false); break
+    case "practicePinned":
+      if (info.length && info[0].pinned === true && info[0].floating === true) markDone(false); break
+    case "practiceGrouped":
+      if (info.length && info[0].grouped && info[0].grouped.length > 0) markDone(false); break
+    case "practiceOnSpecial":
+      for (var j = 0; j < info.length; j++) if (info[j].workspace && String(info[j].workspace.name).indexOf("special") === 0) markDone(false); break
+    case "practiceResized": {  // size changed on axis "x"|"y" vs. step start
+      if (!info.length || !stepStart.size) return
+      var ax = v.axis === "y" ? 1 : 0
+      if (Math.abs(info[0].size[ax] - stepStart.size[ax]) >= 10) markDone(false)
+      break }
+    case "practiceMoved": {    // position changed vs. step start (swap / orientation)
+      if (!info.length || !stepStart.at) return
+      if (info[0].at[0] !== stepStart.at[0] || info[0].at[1] !== stepStart.at[1]) markDone(false)
+      break }
+    case "practiceClosed":
+      if (practiceAddresses.length < practiceCountAtStart) markDone(false); break
+    case "loose":
+      break
+    case "focusChanged":       // the focused practice window is a different one than at step start
+      if (info.length && stepStart.address && info[0].address !== stepStart.address && info[0].focusHistoryID === 0) markDone(false)
+      break
     }
   }
 
-  onFocusedWorkspaceChanged: {
-    var h = workspaceHistory.slice(-5); h.push(focusedWorkspace); workspaceHistory = h
-    if (h.length >= 2) previousWorkspace = h[h.length - 2]
-    verifyNow()
-  }
+  onFocusedWorkspaceChanged: verifyNow()
 
   Connections {
     target: Hyprland
     function onRawEvent(event) {
-      if (event.name === "openwindow" && root.awaitingPractice) {
-        var parts = event.data.split(",")
-        if (parts.length >= 4 && parts.slice(3).join(",") === root.practiceTitle) {
+      var n = event.name, d = event.data
+      if (n === "openwindow") {
+        var parts = d.split(",")
+        if (root.awaitingPractice && parts.length >= 4 && parts.slice(3).join(",") === root.practiceTitle) {
           var a = root.practiceAddresses.slice(); a.push("0x" + parts[0]); root.practiceAddresses = a
-          var n = a.length - 1
-          var park = root.lesson && root.lesson.setup && root.lesson.setup.workspaces ? root.lesson.setup.workspaces[n] : undefined
+          var k = a.length - 1
+          var park = root.lesson && root.lesson.setup && root.lesson.setup.workspaces ? root.lesson.setup.workspaces[k] : undefined
           if (park !== undefined && park !== root.focusedWorkspace)
             Hyprland.dispatch("hl.dsp.window.move({ window = \"address:0x" + parts[0] + "\", workspace = \"" + park + "\", follow = false })")
           if (a.length >= root.practiceWanted) root.awaitingPractice = false
         }
-      }
-      if (event.name === "closewindow") {
-        var idx = root.practiceAddresses.indexOf("0x" + event.data)
+        if (parts.length >= 3) root.windowSeen = parts[2]
+      } else if (n === "closewindow") {
+        var idx = root.practiceAddresses.indexOf("0x" + d)
         if (idx !== -1) { var b = root.practiceAddresses.slice(); b.splice(idx, 1); root.practiceAddresses = b }
+      } else if (n === "activewindow") {
+        root.activeSeen = d.split(",")[0]
+      } else if (n === "openlayer") {
+        root.layerSeen = d
+      } else if (n === "activespecial" || n === "activespecialv2") {
+        if (d.indexOf("special") !== -1) root.specialSeen = true
       }
-      if (event.name === "movewindow" || event.name === "movewindowv2" || event.name === "workspace") {
-        // toplevel workspace pointers refresh async; re-check on next tick.
-        recheck.restart()
-      }
+      recheck.restart()
     }
   }
-  Timer { id: recheck; interval: 60; onTriggered: root.verifyNow() }
+  Timer { id: recheck; interval: 80; onTriggered: root.refreshClients() }
+  // Safety net: nothing observable should ever be missed because an event
+  // raced a snapshot in flight.
+  Timer { running: root.phase === "waiting"; interval: 600; repeat: true; onTriggered: root.refreshClients() }
+
+  // Some shell surfaces (the bar panels) are one keepLoaded layer that maps
+  // and unmaps without a reliable openlayer event; `hyprctl layers` lists a
+  // layer only while it is mapped, so poll it during layer steps.
+  property var layersAtStart: []
+  property var layersNow: []
+  Process {
+    id: layersProc
+    command: ["hyprctl", "layers", "-j"]
+    stdout: StdioCollector { onStreamFinished: {
+      var names = []
+      try {
+        var j = JSON.parse(text)
+        for (var mon in j) { var lv = j[mon].levels; for (var l in lv) for (var i = 0; i < lv[l].length; i++) names.push(lv[l][i].namespace) }
+      } catch (e) {}
+      if (root.captureLayers) { root.layersAtStart = names; root.captureLayers = false }
+      root.layersNow = names
+      root.verifyNow()
+    } }
+  }
+  property bool captureLayers: false
   Timer {
-    // Toplevel workspace pointers refresh asynchronously after a move; poll
-    // gently while a window-based step is waiting.
-    running: root.phase === "waiting" && root.step !== null && root.step.verify && root.step.verify.type.indexOf("practiceWindow") === 0
-    interval: 250; repeat: true
-    onTriggered: root.verifyNow()
+    running: root.phase === "waiting" && root.step !== null && root.step.verify && root.step.verify.type === "layer"
+    interval: 300; repeat: true; triggeredOnStart: true
+    onTriggered: if (!layersProc.running) layersProc.running = true
+  }
+  Timer {
+    running: root.phase === "waiting" && root.step !== null && root.step.verify && root.step.verify.type.indexOf("practice") === 0
+    interval: 300; repeat: true
+    onTriggered: root.refreshClients()
   }
 }

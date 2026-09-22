@@ -1,0 +1,91 @@
+{
+  "id": "hyprland.windows-2",
+  "track": "hyprland",
+  "title": "Windows II — size & shape",
+  "course": {
+    "module": 3,
+    "section": "3.16",
+    "url": "https://stevinator.com/courses/omarchy/module-03"
+  },
+  "setup": {
+    "practiceWindows": 2,
+    "isolate": true
+  },
+  "steps": [
+    {
+      "id": "grow",
+      "say": "Change the focused window's width.",
+      "keys": [
+        "Super",
+        "= / -"
+      ],
+      "hint": "Super + - and Super + = move the split left or right. Whichever edge has room will move; try both.",
+      "verify": {
+        "type": "practiceResized",
+        "axis": "x"
+      },
+      "showme": "hl.dsp.window.resize({ x = -100, y = 0, relative = true })",
+      "why": "Resizing is relative: tap a few times to get the width you want.",
+      "revert": "hl.dsp.window.resize({ x = 100, y = 0, relative = true })"
+    },
+    {
+      "id": "grow-y",
+      "say": "Now change its height.",
+      "keys": [
+        "Super",
+        "Shift",
+        "= / -"
+      ],
+      "hint": "Add Shift: Super + Shift + - / =. If the windows are side by side, press Super + J first so they stack and height can change.",
+      "verify": {
+        "type": "practiceResized",
+        "axis": "y"
+      },
+      "showme": null,
+      "why": "Shift = the other axis. Same pattern as before."
+    },
+    {
+      "id": "save-width",
+      "say": "Save the current width.",
+      "keys": [
+        "Super",
+        "Alt",
+        "Home"
+      ],
+      "hint": "Super + Alt + Home remembers this window's width. Nothing visible happens yet.",
+      "verify": {
+        "type": "loose"
+      },
+      "showme": null,
+      "why": "Save now, restore later — handy for a terminal you keep at one size."
+    },
+    {
+      "id": "restore-width",
+      "say": "Change the width, then restore it.",
+      "keys": [
+        "Super",
+        "Home"
+      ],
+      "hint": "Change the width first (Super + - / =), then Super + Home snaps it back to the saved width.",
+      "verify": {
+        "type": "loose"
+      },
+      "showme": null,
+      "why": "Restore is the payoff of the previous step."
+    },
+    {
+      "id": "pop",
+      "say": "Pop the window out.",
+      "keys": [
+        "Super",
+        "O"
+      ],
+      "hint": "Super + O floats the window and pins it above every workspace.",
+      "verify": {
+        "type": "practicePinned"
+      },
+      "showme": "omarchy-hyprland-window-pop",
+      "why": "Pop-out is for a reference window you want on top of everything."
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "id": "hyprland.essentials",
+  "track": "hyprland",
+  "title": "Essentials",
+  "course": {
+    "module": 3,
+    "section": "3.4",
+    "url": "https://stevinator.com/courses/omarchy/module-03"
+  },
+  "setup": {
+    "practiceWindows": 1,
+    "isolate": true
+  },
+  "steps": [
+    {
+      "id": "menu",
+      "say": "Open the Omarchy menu.",
+      "keys": [
+        "Super",
+        "Space"
+      ],
+      "hint": "Super + Space is the front door: apps, settings, everything. Press Escape to close it again.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-menu",
+        "loose": true
+      },
+      "showme": "omarchy-menu toggle",
+      "why": "When you forget a shortcut, this menu is where you look."
+    },
+    {
+      "id": "terminal",
+      "say": "Launch a terminal.",
+      "keys": [
+        "Super",
+        "Return"
+      ],
+      "hint": "Super + Return (Enter) opens a new terminal window.",
+      "verify": {
+        "type": "windowClass",
+        "class": "com.mitchellh.ghostty"
+      },
+      "showme": "omarchy-launch-terminal",
+      "why": "Omarchy is terminal-first. This is the shortcut you'll press most."
+    },
+    {
+      "id": "browser",
+      "say": "Launch the browser.",
+      "keys": [
+        "Super",
+        "Shift",
+        "Return"
+      ],
+      "hint": "Add Shift to Super + Return and you get the browser instead.",
+      "verify": {
+        "type": "windowClass",
+        "class": "chromium"
+      },
+      "showme": null,
+      "why": "Shift on a launch shortcut usually means 'the other one'."
+    },
+    {
+      "id": "keybindings",
+      "say": "Open the keybindings reference.",
+      "keys": [
+        "Super",
+        "K"
+      ],
+      "hint": "Super + K lists every shortcut with a search box. Escape closes it.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-menu",
+        "loose": true
+      },
+      "showme": null,
+      "why": "You never need to memorize everything: Super + K is the cheat sheet built into the desktop."
+    },
+    {
+      "id": "close",
+      "say": "Close the focused window.",
+      "keys": [
+        "Super",
+        "W"
+      ],
+      "hint": "Click the practice window first so it has focus, then Super + W.",
+      "verify": {
+        "type": "practiceClosed"
+      },
+      "showme": null,
+      "why": "W for window. It's the only close shortcut Omarchy 4 ships."
+    },
+    {
+      "id": "system",
+      "say": "Open the system menu.",
+      "keys": [
+        "Super",
+        "Escape"
+      ],
+      "hint": "Super + Escape: lock, suspend, restart, shut down. Escape again to back out.",
+      "verify": {
+        "type": "layer",
+        "namespace": "omarchy-menu",
+        "loose": true
+      },
+      "showme": "omarchy-menu toggle system",
+      "why": "Everything about leaving the machine lives here."
+    }
+  ]
+}
