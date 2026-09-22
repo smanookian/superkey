@@ -4,7 +4,7 @@ Learn Omarchy shortcuts by doing. A free Omarchy 4 shell plugin that guides
 you through the real keybindings on your real desktop and confirms each one
 actually happened. Companion to the free Stevinator Omarchy course.
 
-**Status: milestone 4 — Hyprland (7 lessons) and Tmux (2 lessons) tracks run end to end.** See [DESIGN.md](DESIGN.md) for the plan.
+**Status: milestone 5 — all three tracks run end to end: Hyprland (7 lessons), Tmux (2), Neovim (1). 10 lessons, 70 steps.** See [DESIGN.md](DESIGN.md) for the plan.
 
 ## Requirements
 
@@ -172,3 +172,27 @@ How it observes Tmux (`TmuxVerify.qml`):
 Not automatable in tests: the prefix step. `tmux send-keys` types into the
 *pane* and bypasses key bindings, so only a real keypress arms the prefix.
 The `#{client_prefix}` poll is documented tmux behaviour; verify it by hand.
+
+## Milestone 5 — the Neovim track
+
+One lesson, *Editor basics*, 6 steps: leader menu, file finder, project
+grep, explorer, explorer resize, Lazygit. (`Super+Shift+N`, launching the
+editor, lives in *Essentials* where it can be observed as a window opening
+with class `org.omarchy.nvim`.)
+
+How it observes Neovim (`NvimVerify.qml`):
+
+- Setup builds a **throwaway sample project** in `/tmp/superkey-practice`
+  (three files, a real git repo with one commit, so the explorer, grep and
+  Lazygit have something to show) and opens it in
+  `ghostty -e nvim --listen $XDG_RUNTIME_DIR/superkey-nvim.sock README.md`.
+  Your files are never opened.
+- While a step waits, `nvim --server … --remote-expr` is polled every
+  250 ms for one JSON snapshot: is a which-key window open (`filetype=wk`),
+  which snacks pickers are open and their `source` (`files` vs `grep`), is
+  a `neo-tree` window open and how wide, is there a terminal buffer running
+  `lazygit`.
+- Verified against the LazyVim Omarchy 4.0.4 installs (v16.0.0: snacks.nvim
+  picker, neo-tree, which-key v3). Other picker/explorer plugins would need
+  the expression in `NvimVerify.qml` extended.
+- Teardown removes the socket and the sample project.

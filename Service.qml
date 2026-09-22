@@ -104,8 +104,11 @@ Item {
   }
 
   TmuxVerify { id: tmux }
+  NvimVerify { id: nvim }
   readonly property var tmuxState: tmux
+  readonly property var nvimState: nvim
   readonly property bool tmuxLesson: lesson !== null && lesson.setup && lesson.setup.tmux === true
+  readonly property bool nvimLesson: lesson !== null && lesson.setup && lesson.setup.nvim === true
 
   function spawnPractice(count) {
     practiceWanted = practiceAddresses.length + count
@@ -113,6 +116,8 @@ Item {
     for (var i = 0; i < count; i++) {
       if (tmuxLesson)
         Quickshell.execDetached(["ghostty", "--title=" + practiceTitle, "-e", "tmux", "-L", tmux.socket, "attach", "-t", "practice"])
+      else if (nvimLesson)
+        Quickshell.execDetached(nvim.editorCommand)
       else
         Quickshell.execDetached(["ghostty", "--title=" + practiceTitle, "-e", "bash", "-c",
           "printf '\\n  Superkey practice window " + (i + 1) + ".\\n  Do the shortcuts on THIS window when asked.\\n\\n'; exec bash"])
@@ -222,6 +227,7 @@ Item {
       if (practiceWorkspace !== -1) Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + practiceWorkspace + "\" })")
     }
     if (parsed.setup && parsed.setup.tmux === true) { tmux.start(); spawnLater.interval = 900 }
+    else if (parsed.setup && parsed.setup.nvim === true) { nvim.start(); spawnLater.interval = 900 }
     else spawnLater.interval = 250
     if (parsed.setup && parsed.setup.practiceWindows > 0) spawnLater.restart()
     else nextStep()
@@ -253,6 +259,8 @@ Item {
     phase = "waiting"
     tmux.beginStep()
     tmux.polling = tmuxLesson
+    nvim.beginStep()
+    nvim.polling = nvimLesson
     if (tmuxLesson && lesson.steps[stepIndex].verify && lesson.steps[stepIndex].verify.type === "tmuxReload") tmux.armReloadDetection()
     tmux.watchPrefix = lesson.steps[stepIndex].verify && lesson.steps[stepIndex].verify.type === "tmuxPrefix"
     practiceCountAtStart = practiceAddresses.length
@@ -304,7 +312,7 @@ Item {
 
   function showHint() { hintShown = true }
 
-  function teardownTmux() { tmux.polling = false; if (tmux.active) tmux.stop() }
+  function teardownTmux() { tmux.polling = false; if (tmux.active) tmux.stop(); if (nvim.active) nvim.stop() }
 
   function goHome() {
     teardownTmux()
@@ -431,6 +439,11 @@ Item {
     case "tmuxPaneClose":     if (tmux.paneCount < tmux.paneCountAtStart) markDone(false); break
     case "tmuxSessionSwitch": if (tmux.visibleSession !== "" && tmux.visibleSessionAtStart !== "" && tmux.visibleSession !== tmux.visibleSessionAtStart) markDone(false); break
     case "tmuxReload":        if (tmux.reloadSeen) markDone(false); break
+    case "nvimWhichKey":     if (nvim.whichKey) markDone(false); break
+    case "nvimPicker":       if (nvim.hasSource(v.source)) markDone(false); break
+    case "nvimExplorer":     if (nvim.explorer) markDone(false); break
+    case "nvimExplorerResized": if (nvim.explorer && nvim.explorerWidthAtStart > 0 && nvim.explorerWidth !== nvim.explorerWidthAtStart) markDone(false); break
+    case "nvimLazygit":      if (nvim.lazygit) markDone(false); break
     case "practiceClosed":
       if (practiceAddresses.length < practiceCountAtStart) markDone(false); break
     case "loose":
@@ -443,6 +456,7 @@ Item {
 
   onFocusedWorkspaceChanged: verifyNow()
   Connections { target: tmux; function onEventSerialChanged() { root.verifyNow() } }
+  Connections { target: nvim; function onSerialChanged() { root.verifyNow() } }
 
   Connections {
     target: Hyprland

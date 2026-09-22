@@ -183,7 +183,7 @@ Item {
     "hyprland.essentials": "Essentials", "hyprland.windows-1": "Windows I \u2014 focus & tiling",
     "hyprland.windows-2": "Windows II \u2014 size & shape", "hyprland.windows-3": "Windows III \u2014 groups",
     "hyprland.workspaces": "Workspaces", "hyprland.scratchpad": "Scratchpad", "hyprland.panels": "Panels & tools",
-    "tmux.sessions": "Sessions & windows", "tmux.panes": "Panes"
+    "tmux.sessions": "Sessions & windows", "tmux.panes": "Panes", "nvim.basics": "Editor basics"
   })
   function lessonTitle(id) { return lessonTitles[id] || id }
 

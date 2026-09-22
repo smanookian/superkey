@@ -1,0 +1,104 @@
+{
+  "id": "nvim.basics",
+  "track": "nvim",
+  "title": "Editor basics",
+  "course": {
+    "module": 8,
+    "section": "8.3",
+    "url": "https://stevinator.com/courses/omarchy/module-08"
+  },
+  "setup": {
+    "practiceWindows": 1,
+    "isolate": true,
+    "nvim": true
+  },
+  "steps": [
+    {
+      "id": "leader",
+      "say": "In the editor, press Space and wait.",
+      "keys": [
+        "Space"
+      ],
+      "hint": "Space is the leader key. Pause after it and a menu of everything it can do appears.",
+      "verify": {
+        "type": "nvimWhichKey"
+      },
+      "showme": null,
+      "why": "You don't memorize Neovim — you press Space and read."
+    },
+    {
+      "id": "find",
+      "say": "Open the file finder.",
+      "keys": [
+        "Space",
+        "Space"
+      ],
+      "hint": "Space twice. Type a few letters of a file name, Enter opens it, Escape closes.",
+      "verify": {
+        "type": "nvimPicker",
+        "source": "files"
+      },
+      "showme": null,
+      "why": "Fuzzy finding replaces the file tree for most navigation."
+    },
+    {
+      "id": "grep",
+      "say": "Search the whole project for text.",
+      "keys": [
+        "Space",
+        "S",
+        "G"
+      ],
+      "hint": "Space, s, g — then type TODO. Escape closes the picker.",
+      "verify": {
+        "type": "nvimPicker",
+        "source": "grep"
+      },
+      "showme": null,
+      "why": "Project-wide grep is how you find where something is *used*, not just where it lives."
+    },
+    {
+      "id": "explorer",
+      "say": "Open the file sidebar.",
+      "keys": [
+        "Space",
+        "E"
+      ],
+      "hint": "Space, then e. The tree opens on the left; Space e again hides it.",
+      "verify": {
+        "type": "nvimExplorer"
+      },
+      "showme": null,
+      "why": "The sidebar is for browsing structure; the finder is for jumping."
+    },
+    {
+      "id": "resize",
+      "say": "Make the sidebar wider or narrower.",
+      "keys": [
+        "Ctrl",
+        "←/→"
+      ],
+      "hint": "With the sidebar focused (Ctrl + h moves into it), Ctrl + Left / Right changes its width.",
+      "verify": {
+        "type": "nvimExplorerResized"
+      },
+      "showme": null,
+      "why": "Window resize keys work on any split, not just the sidebar."
+    },
+    {
+      "id": "lazygit",
+      "say": "Open Lazygit inside the editor.",
+      "keys": [
+        "Space",
+        "G",
+        "G"
+      ],
+      "hint": "Space, g, g. The practice project is a real git repo. Press q to leave Lazygit.",
+      "verify": {
+        "type": "nvimLazygit"
+      },
+      "showme": null,
+      "why": "Commit, stage, and diff without leaving the editor."
+    }
+  ]
+}

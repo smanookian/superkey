@@ -22,6 +22,14 @@
         "tmux.sessions",
         "tmux.panes"
       ]
+    },
+    {
+      "id": "nvim",
+      "title": "Neovim",
+      "blurb": "LazyVim: leader menu, finder, grep, explorer, Lazygit.",
+      "lessons": [
+        "nvim.basics"
+      ]
     }
   ]
 }

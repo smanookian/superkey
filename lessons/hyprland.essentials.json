@@ -60,6 +60,22 @@
       "why": "Shift on a launch shortcut usually means 'the other one'."
     },
     {
+      "id": "editor",
+      "say": "Launch the editor.",
+      "keys": [
+        "Super",
+        "Shift",
+        "N"
+      ],
+      "hint": "Super + Shift + N opens Neovim in a terminal. :q or Super + W closes it.",
+      "verify": {
+        "type": "windowClass",
+        "class": "org.omarchy.nvim"
+      },
+      "showme": "omarchy-launch-editor",
+      "why": "N for Neovim. Omarchy's default editor is LazyVim; there's a whole track for it."
+    },
+    {
       "id": "keybindings",
       "say": "Open the keybindings reference.",
       "keys": [
