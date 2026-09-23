@@ -4,7 +4,7 @@ Learn Omarchy shortcuts by doing. A free Omarchy 4 shell plugin that guides
 you through the real keybindings on your real desktop and confirms each one
 actually happened. Companion to the free Stevinator Omarchy course.
 
-**Status: milestone 5 — all three tracks run end to end: Hyprland (7 lessons), Tmux (2), Neovim (1). 10 lessons, 70 steps.** See [DESIGN.md](DESIGN.md) for the plan.
+**Status: milestone 6 — all three tracks (10 lessons, 70 steps), robot, pointing, sound, settings. Next: release.** See [DESIGN.md](DESIGN.md) for the plan.
 
 ## Requirements
 
@@ -211,5 +211,12 @@ How it observes Neovim (`NvimVerify.qml`):
   off the highlight pulse, the robot's success bounce, and geometry
   animations). Both toggles sit on the lesson map.
 
-Still to do for milestone 6: the robot itself (sprites from the mascot
-brief in `MASCOT.md`) replacing the placeholder square.
+
+## Milestone 6 (part 2) — the robot
+
+Six pixel-art states in `assets/robot/` (see its README for provenance and
+the normalization pipeline). The coach picks a state from engine state:
+`idle`/`blink` while waiting, `point-right` when a window is highlighted,
+`think` on Hint or when a step can't be observed, `success` on verify (with
+a small bounce), `done` at lesson end. Under *Less motion* only state swaps
+remain. Rendered with `smooth: false` so pixels stay crisp at any scale.

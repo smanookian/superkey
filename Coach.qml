@@ -110,13 +110,36 @@ Item {
         Row {
           spacing: Style.space(10)
           width: parent.width
-          Rectangle {
-            width: Style.space(40); height: Style.space(40); radius: Style.space(6)
-            color: root.phase === "success" ? Color.accent : Util.alpha(Color.accent, 0.5)
-            scale: root.phase === "success" && !(root.service && root.service.reduceMotion) ? 1.12 : 1.0
-            Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
-            Behavior on color { ColorAnimation { duration: 160 } }
-            Text { anchors.centerIn: parent; text: root.phase === "success" ? "✓" : "SK"; color: Color.background; font.bold: true; font.family: Style.font.family; font.pixelSize: Style.font.title }
+          // Robot: six 64x64 pixel-art states in assets/robot, chosen from
+          // engine state. Blink alternates with idle; nothing else animates
+          // except a small success bounce (off under Less motion).
+          Item {
+            id: robot
+            width: Style.space(56); height: Style.space(56)
+            readonly property bool reduce: root.service && root.service.reduceMotion
+            readonly property string state: {
+              if (!root.service) return "idle"
+              if (root.service.finished) return "done"
+              if (root.phase === "success") return "success"
+              if (root.phase === "waiting" && root.service.demoNote === "" && (root.service.hintShown || (root.step && root.step.verify && (root.step.verify.type === "loose" || root.step.verify.loose === true)))) return "think"
+              if (root.phase === "waiting" && root.service.highlightRect !== null) return "point-right"
+              return blinkTimer.blinking ? "blink" : "idle"
+            }
+            Timer {
+              id: blinkTimer
+              property bool blinking: false
+              running: root.opened && !robot.reduce && robot.state.indexOf("idle") === 0 || robot.state === "blink"
+              interval: blinking ? 140 : 3600; repeat: true
+              onTriggered: blinking = !blinking
+            }
+            Image {
+              anchors.fill: parent
+              source: Qt.resolvedUrl("assets/robot/" + robot.state + ".png")
+              smooth: false; mipmap: false
+              fillMode: Image.PreserveAspectFit
+              scale: robot.state === "success" && !robot.reduce ? 1.12 : 1.0
+              Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
+            }
           }
           Column {
             spacing: Style.space(2)
