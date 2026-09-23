@@ -196,3 +196,20 @@ How it observes Neovim (`NvimVerify.qml`):
   picker, neo-tree, which-key v3). Other picker/explorer plugins would need
   the expression in `NvimVerify.qml` extended.
 - Teardown removes the socket and the sample project.
+
+## Milestone 6 (part 1) — pointing, sound, settings
+
+- **Pointing is exact or absent.** During window steps a click-through
+  layer (`superkey-highlight`) draws a pulsing accent frame around the
+  practice window the step is about, following focus. Bar pointing was
+  dropped: third-party plugins can't read bar-widget geometry, and an
+  approximate arrow is worse than none.
+- **Sound** via `pw-play` (no qt6-multimedia on Omarchy): three tiny
+  synthesized WAVs in `assets/sfx/` (success, skip, lesson complete) that we
+  own outright. Swap for any CC0 pack by replacing the files.
+- **Settings** persist in `progress.json`: *Mute* and *Less motion* (turns
+  off the highlight pulse, the robot's success bounce, and geometry
+  animations). Both toggles sit on the lesson map.
+
+Still to do for milestone 6: the robot itself (sprites from the mascot
+brief in `MASCOT.md`) replacing the placeholder square.

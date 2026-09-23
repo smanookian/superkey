@@ -45,6 +45,25 @@ Item {
 
   function lessonProgress(id) { return progress.lessons[id] || null }
 
+  readonly property bool muted: progress.settings && progress.settings.muted === true
+  readonly property bool reduceMotion: progress.settings && progress.settings.reduceMotion === true
+  function setSetting(key, value) {
+    var p = ({}); for (var i in progress) p[i] = progress[i]
+    var st = ({}); for (var j in progress.settings) st[j] = progress.settings[j]
+    st[key] = value; p.settings = st; progress = p; saveProgress()
+  }
+
+  // Sound: qt6-multimedia isn't on Omarchy, pw-play is. Tiny synthesized
+  // WAVs in assets/sfx, owned outright.
+  readonly property string sfxDir: Qt.resolvedUrl("assets/sfx/").toString().replace("file://", "")
+  Process { id: sfxProc; command: ["pw-play", ""] }
+  function play(name) {
+    if (muted) return
+    if (sfxProc.running) return
+    sfxProc.command = ["pw-play", sfxDir + name + ".wav"]
+    sfxProc.running = true
+  }
+
   function recordLessonResult() {
     if (!lesson) return
     var done = 0, skipped = 0, loose = 0
@@ -147,6 +166,15 @@ Item {
     if (clientsProc.running) { refreshPending = true; return }
     clientsProc.running = true
   }
+  // Geometry of the window the current step is about (for the highlight
+  // overlay). Empty when nothing should be pointed at.
+  readonly property var highlightRect: {
+    if (phase !== "waiting" || !step || !step.verify || step.verify.type.indexOf("practice") !== 0 && step.verify.type !== "focusChanged") return null
+    var info = practiceInfo()
+    if (!info.length || info[0].workspace.id !== focusedWorkspace) return null
+    return { x: info[0].at[0], y: info[0].at[1], w: info[0].size[0], h: info[0].size[1] }
+  }
+
   function practiceInfo() {
     var out = []
     for (var i = 0; i < clientsSnapshot.length; i++) {
@@ -301,12 +329,14 @@ Item {
     demoNote = ""
     var r = ({}); for (var k in results) r[k] = results[k]; r[step.id] = loose ? "loose" : "done"; results = r
     phase = "success"
+    play(stepIndex === lesson.steps.length - 1 ? "complete" : "success")
     advanceTimer.restart()
   }
 
   function skipStep() {
     if (!step) return
     var r = ({}); for (var k in results) r[k] = results[k]; r[step.id] = "skipped"; results = r
+    play("skip")
     nextStep()
   }
 

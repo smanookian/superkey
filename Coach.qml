@@ -33,11 +33,50 @@ Item {
   function showme() { if (service) service.showMe() }
   function debug() { return service ? JSON.stringify({ windowSeen: service.windowSeen, activeSeen: service.activeSeen, activeAtStart: service.activeAtStart, layerSeen: service.layerSeen, practice: service.practiceAddresses, snap: service.clientsSnapshot.length, captureStart: service.captureStart, verify: service.step ? service.step.verify : null, stepStart: service.stepStart ? service.stepStart.address : null, info: service.practiceInfo().map(function(c){ return c.address + ":" + c.focusHistoryID + ":" + c.workspace.id }) }) : "{}" }
   function tmuxdebug() { var t = service ? service.tmuxState : null; return t ? JSON.stringify({ active: t.active, lastEvent: t.lastEvent, serial: t.eventSerial, panes: t.paneCount, windows: t.windowCount, added: t.windowsAdded, prefix: t.prefixSeen, watchPrefix: t.watchPrefix, layout: t.layout, order: t.windowOrder, orderStart: t.windowOrderAtStart, changed: t.orderChanged() }) : "none" }
+  function setting(kv) { var p = kv.split("="); if (service) service.setSetting(p[0], p[1] === "true"); return JSON.stringify(service.progress.settings) }
   function state() { return service ? JSON.stringify({ phase: service.phase, step: service.stepIndex, results: service.results }) : "{}" }
 
   readonly property int pad: Style.space(14)
   readonly property var step: service ? service.step : null
   readonly property string phase: service ? service.phase : "idle"
+
+  // Pointing (exact): a click-through fullscreen layer that draws an accent
+  // frame around the window the current step is about. Bar pointing was
+  // dropped on purpose -- third-party plugins can't read bar geometry, and
+  // an approximate arrow is worse than none.
+  PanelWindow {
+    id: highlight
+    visible: root.opened && root.service && root.service.highlightRect !== null
+    screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+    anchors { top: true; bottom: true; left: true; right: true }
+    color: "transparent"
+    WlrLayershell.namespace: "superkey-highlight"
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    exclusionMode: ExclusionMode.Ignore
+    mask: Region {}
+    Rectangle {
+      readonly property var r: root.service ? root.service.highlightRect : null
+      visible: r !== null
+      x: r ? r.x - 4 : 0; y: r ? r.y - 4 : 0
+      width: r ? r.w + 8 : 0; height: r ? r.h + 8 : 0
+      color: "transparent"
+      border.color: Color.accent
+      border.width: 3
+      radius: Style.cornerRadius + 4
+      opacity: 0.9
+      SequentialAnimation on opacity {
+        running: visible && !(root.service && root.service.reduceMotion)
+        loops: Animation.Infinite
+        NumberAnimation { to: 0.35; duration: 700; easing.type: Easing.InOutSine }
+        NumberAnimation { to: 0.9; duration: 700; easing.type: Easing.InOutSine }
+      }
+      Behavior on x { enabled: !(root.service && root.service.reduceMotion); NumberAnimation { duration: 180 } }
+      Behavior on y { enabled: !(root.service && root.service.reduceMotion); NumberAnimation { duration: 180 } }
+      Behavior on width { enabled: !(root.service && root.service.reduceMotion); NumberAnimation { duration: 180 } }
+      Behavior on height { enabled: !(root.service && root.service.reduceMotion); NumberAnimation { duration: 180 } }
+    }
+  }
 
   PanelWindow {
     id: panel
@@ -74,6 +113,9 @@ Item {
           Rectangle {
             width: Style.space(40); height: Style.space(40); radius: Style.space(6)
             color: root.phase === "success" ? Color.accent : Util.alpha(Color.accent, 0.5)
+            scale: root.phase === "success" && !(root.service && root.service.reduceMotion) ? 1.12 : 1.0
+            Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
+            Behavior on color { ColorAnimation { duration: 160 } }
             Text { anchors.centerIn: parent; text: root.phase === "success" ? "✓" : "SK"; color: Color.background; font.bold: true; font.family: Style.font.family; font.pixelSize: Style.font.title }
           }
           Column {
@@ -173,6 +215,8 @@ Item {
           CoachButton { text: "Skip"; visible: root.step !== null && root.phase === "waiting"; onClicked: root.service.skipStep() }
           CoachButton { text: "Again"; visible: root.service && root.service.finished; onClicked: root.service.startLesson(root.service.lesson.id) }
           CoachButton { text: "Lessons"; visible: root.service && (root.service.finished || !root.service.lesson); onClicked: { if (root.service) root.service.stopLesson() } }
+          CoachButton { text: root.service && root.service.muted ? "Unmute" : "Mute"; visible: root.service && !root.service.lesson; onClicked: root.service.setSetting("muted", !root.service.muted) }
+          CoachButton { text: root.service && root.service.reduceMotion ? "Motion on" : "Less motion"; visible: root.service && !root.service.lesson; onClicked: root.service.setSetting("reduceMotion", !root.service.reduceMotion) }
           CoachButton { text: "Close"; onClicked: { if (root.service) root.service.stopLesson(); root.close() } }
         }
       }
