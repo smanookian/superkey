@@ -361,7 +361,7 @@ Item {
 
   function goHome() {
     teardownTmux()
-    if (practiceWorkspace !== -1 && homeWorkspace !== -1) Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + homeWorkspace + "\" })")
+    if (homeWorkspace !== -1 && homeWorkspace !== focusedWorkspace) Hyprland.dispatch("hl.dsp.focus({ workspace = \"" + homeWorkspace + "\" })")
     practiceWorkspace = -1
   }
 
