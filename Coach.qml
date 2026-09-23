@@ -14,9 +14,12 @@ Item {
   property var service: null
   property string omarchyPath: Quickshell.env("OMARCHY_PATH")
   property bool opened: false
+  // "welcome" | "lessons" | "settings"; the lesson UI shows whenever a lesson is running.
+  property string view: "lessons"
 
   function open(payloadJson) {
     opened = true
+    if (service && !service.welcomeSeen) view = "welcome"
     try {
       var p = JSON.parse(payloadJson || "{}")
       if (p.lesson && service) service.startLesson(p.lesson)
@@ -34,9 +37,17 @@ Item {
   function debug() { return service ? JSON.stringify({ windowSeen: service.windowSeen, activeSeen: service.activeSeen, activeAtStart: service.activeAtStart, layerSeen: service.layerSeen, practice: service.practiceAddresses, snap: service.clientsSnapshot.length, captureStart: service.captureStart, verify: service.step ? service.step.verify : null, stepStart: service.stepStart ? service.stepStart.address : null, info: service.practiceInfo().map(function(c){ return c.address + ":" + c.focusHistoryID + ":" + c.workspace.id }) }) : "{}" }
   function tmuxdebug() { var t = service ? service.tmuxState : null; return t ? JSON.stringify({ active: t.active, lastEvent: t.lastEvent, serial: t.eventSerial, panes: t.paneCount, windows: t.windowCount, added: t.windowsAdded, prefix: t.prefixSeen, watchPrefix: t.watchPrefix, layout: t.layout, order: t.windowOrder, orderStart: t.windowOrderAtStart, changed: t.orderChanged() }) : "none" }
   function setting(kv) { var p = kv.split("="); if (service) service.setSetting(p[0], p[1] === "true"); return JSON.stringify(service.progress.settings) }
+  function act(name) { if (name === "copy") service.copyBinding(); else if (name === "reset") service.resetProgress(); else if (name === "welcomeSeen") service.setSetting("welcomeSeen", true); else if (name === "quit") service.quit(); return "ok" }
+  function showView(v) { root.view = v; return root.view }
   function state() { return service ? JSON.stringify({ phase: service.phase, step: service.stepIndex, results: service.results }) : "{}" }
 
   readonly property int pad: Style.space(14)
+  property bool copied: false
+  property bool confirmReset: false
+  property bool confirmQuit: false
+  Timer { id: copiedTimer; interval: 2500; onTriggered: root.copied = false }
+  Timer { id: resetTimer; interval: 4000; onTriggered: root.confirmReset = false }
+  Timer { id: quitTimer; interval: 4000; onTriggered: root.confirmQuit = false }
   readonly property var step: service ? service.step : null
   readonly property string phase: service ? service.phase : "idle"
 
@@ -150,7 +161,7 @@ Item {
               color: Color.popups.text; font.family: Style.font.family; font.bold: true; font.pixelSize: Style.font.title
             }
             Text {
-              text: root.service && root.service.lesson ? "Workspace " + root.service.focusedWorkspace : "Learn Omarchy shortcuts by doing."
+              text: root.service && root.service.lesson ? "Workspace " + root.service.focusedWorkspace : (root.view === "settings" ? "Settings" : "Learn Omarchy shortcuts by doing, with Cappy.")
               color: Util.alpha(Color.popups.text, 0.7); font.family: Style.font.family; font.pixelSize: Style.font.bodySmall
             }
           }
@@ -159,7 +170,7 @@ Item {
         // Lesson map (idle)
         Column {
           width: parent.width
-          visible: root.service && !root.service.lesson && root.service.index
+          visible: root.service && !root.service.lesson && root.service.index && root.view === "lessons"
           spacing: Style.space(4)
           Repeater {
             model: root.service && root.service.index ? root.service.index.tracks : []
@@ -183,6 +194,53 @@ Item {
                   MouseArea { id: lm; anchors.fill: parent; hoverEnabled: true; onClicked: root.service.startLesson(modelData) }
                 }
               }
+            }
+          }
+        }
+
+        // Welcome (first run)
+        Column {
+          width: parent.width
+          visible: root.service && !root.service.lesson && root.view === "welcome"
+          spacing: Style.space(6)
+          Text { width: parent.width; wrapMode: Text.WordWrap; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.subtitle
+            text: "Hi, I'm Cappy. I'll ask you to press real shortcuts on your real desktop and confirm they worked." }
+          Text { width: parent.width; wrapMode: Text.WordWrap; color: Util.alpha(Color.popups.text, 0.85); font.family: Style.font.family; font.pixelSize: Style.font.bodySmall; lineHeight: 1.25
+            text: "What Superkey never does:\n\u2022 edit your Hyprland, tmux, Neovim or Omarchy config\n\u2022 touch windows it didn't open itself (practice windows are titled \"Superkey practice\")\n\u2022 use your tmux sessions or your files (it runs a private tmux server and a throwaway sample project)\n\u2022 install anything, or go online\nEvery step can be skipped. Progress is saved in ~/.local/state/superkey." }
+          Text { width: parent.width; wrapMode: Text.WordWrap; color: Util.alpha(Color.popups.text, 0.7); font.family: Style.font.family; font.pixelSize: Style.font.bodySmall
+            text: "Open me any time with the SK button in the bar. Settings can copy a keybinding for you." }
+        }
+
+        // Settings
+        Column {
+          width: parent.width
+          visible: root.service && !root.service.lesson && root.view === "settings"
+          spacing: Style.space(8)
+          Row { spacing: Style.space(8)
+            CoachButton { text: root.service && root.service.muted ? "Sound: off" : "Sound: on"; onClicked: root.service.setSetting("muted", !root.service.muted) }
+            CoachButton { text: root.service && root.service.reduceMotion ? "Motion: reduced" : "Motion: full"; onClicked: root.service.setSetting("reduceMotion", !root.service.reduceMotion) }
+          }
+          Column { width: parent.width; spacing: Style.space(3)
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body
+              text: "Keybinding: " + (root.service ? root.service.suggestedKeys : "") }
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: Util.alpha(Color.popups.text, 0.7); font.family: Style.font.family; font.pixelSize: Style.font.bodySmall
+              text: "Superkey never edits your config. Copy the line, paste it into ~/.config/hypr/bindings.lua, and Hyprland picks it up on save." }
+            Row { spacing: Style.space(8)
+              CoachButton { text: root.copied ? "Copied" : "Copy binding line"; onClicked: { root.service.copyBinding(); root.copied = true; copiedTimer.restart() } }
+            }
+          }
+          Column { width: parent.width; spacing: Style.space(3)
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; text: "Progress" }
+            Row { spacing: Style.space(8)
+              CoachButton { text: root.confirmReset ? "Really reset?" : "Reset progress"; onClicked: { if (root.confirmReset) { root.service.resetProgress(); root.confirmReset = false } else { root.confirmReset = true; resetTimer.restart() } } }
+            }
+          }
+          Column { width: parent.width; spacing: Style.space(3)
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; text: "Quit" }
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: Util.alpha(Color.popups.text, 0.7); font.family: Style.font.family; font.pixelSize: Style.font.bodySmall
+              text: "Close just hides Cappy. Quit disables the plugin: the SK button disappears and nothing of Superkey keeps running. To come back: omarchy plugin enable stevinator.superkey" }
+            Row { spacing: Style.space(8)
+              CoachButton { text: root.confirmQuit ? "Really quit?" : "Quit Superkey"; onClicked: { if (root.confirmQuit) root.service.quit(); else { root.confirmQuit = true; quitTimer.restart() } } }
             }
           }
         }
@@ -237,9 +295,11 @@ Item {
           CoachButton { text: "Show me"; visible: root.step !== null && root.phase === "waiting" && root.step.showme; onClicked: root.service.showMe() }
           CoachButton { text: "Skip"; visible: root.step !== null && root.phase === "waiting"; onClicked: root.service.skipStep() }
           CoachButton { text: "Again"; visible: root.service && root.service.finished; onClicked: root.service.startLesson(root.service.lesson.id) }
-          CoachButton { text: "Lessons"; visible: root.service && (root.service.finished || !root.service.lesson); onClicked: { if (root.service) root.service.stopLesson() } }
-          CoachButton { text: root.service && root.service.muted ? "Unmute" : "Mute"; visible: root.service && !root.service.lesson; onClicked: root.service.setSetting("muted", !root.service.muted) }
-          CoachButton { text: root.service && root.service.reduceMotion ? "Motion on" : "Less motion"; visible: root.service && !root.service.lesson; onClicked: root.service.setSetting("reduceMotion", !root.service.reduceMotion) }
+          CoachButton { text: "Lessons"; visible: root.service && root.service.finished; onClicked: { if (root.service) root.service.stopLesson() } }
+          CoachButton { text: "Start with Essentials"; visible: root.service && !root.service.lesson && root.view === "welcome"; onClicked: { root.service.setSetting("welcomeSeen", true); root.view = "lessons"; root.service.startLesson("hyprland.essentials") } }
+          CoachButton { text: "Just show me the lessons"; visible: root.service && !root.service.lesson && root.view === "welcome"; onClicked: { root.service.setSetting("welcomeSeen", true); root.view = "lessons" } }
+          CoachButton { text: "Settings"; visible: root.service && !root.service.lesson && root.view === "lessons"; onClicked: root.view = "settings" }
+          CoachButton { text: "Back to lessons"; visible: root.service && !root.service.lesson && root.view === "settings"; onClicked: root.view = "lessons" }
           CoachButton { text: "Close"; onClicked: { if (root.service) root.service.stopLesson(); root.close() } }
         }
       }
@@ -264,8 +324,8 @@ Item {
   }
   function stepNote() {
     if (!step || !step.verify) return ""
-    if (step.verify.type === "loose") return "I can't see this one \u2014 press Continue when you've done it."
-    if (step.verify.loose === true) return "I can only see that a menu or panel opened, not which one."
+    if (step.verify.type === "loose") return "Cappy can't see this one \u2014 press Continue when you've done it."
+    if (step.verify.loose === true) return "Cappy can only see that a menu or panel opened, not which one."
     return ""
   }
 

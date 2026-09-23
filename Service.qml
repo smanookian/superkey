@@ -45,6 +45,7 @@ Item {
 
   function lessonProgress(id) { return progress.lessons[id] || null }
 
+  readonly property bool welcomeSeen: progress.settings && progress.settings.welcomeSeen === true
   readonly property bool muted: progress.settings && progress.settings.muted === true
   readonly property bool reduceMotion: progress.settings && progress.settings.reduceMotion === true
   function setSetting(key, value) {
@@ -80,6 +81,20 @@ Item {
     progress = ({ version: 1, lessons: {}, settings: progress.settings })
     saveProgress()
   }
+
+  // Keybinding suggestion. Superkey never writes ~/.config/hypr; it copies
+  // one line to the clipboard for the user to paste into bindings.lua.
+  // Super+K, Super+Alt+K and Super+Ctrl+K are all taken on stock Omarchy 4.0.4;
+  // Super+Ctrl+Shift+K is free.
+  readonly property string suggestedKeys: "Super + Ctrl + Shift + K"
+  readonly property string suggestedBinding: 'o.bind("SUPER + CTRL + SHIFT + K", "Superkey", "omarchy-shell shell toggle stevinator.superkey \'{}\'")'
+  Process { id: clip; command: ["wl-copy", ""] }
+  function copyBinding() { clip.command = ["wl-copy", "--", suggestedBinding]; clip.running = true }
+
+  // Quit = disable the plugin. The bar button disappears and the coach
+  // unloads; `omarchy plugin enable stevinator.superkey` brings it back.
+  Process { id: quitProc; command: ["omarchy", "plugin", "disable", "stevinator.superkey"] }
+  function quit() { stopLesson(); quitProc.running = true }
 
   // ---- lesson state ----------------------------------------------------
   property var lesson: null
